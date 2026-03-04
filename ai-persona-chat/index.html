@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ExpertChat — AI Expert Personas Powered by Claude</title>
-<meta name="description" content="Chat with AI experts in tech, business, and creative fields. Get domain-specific insights powered by Claude.">
+<title>Chat with your AI Expert</title>
+<meta name="description" content="Chat with 32 AI expert personas across tech, business, product, and creative fields. Powered by Claude or OpenAI — choose your model. Includes guided Skills Training to help you become the expert yourself.">
 <link rel="canonical" href="https://yg674-dev.github.io/ai-persona-chat/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -286,6 +286,17 @@
     cursor: pointer; transition: all var(--transition); line-height: 1.4;
   }
   .sidebar-starter:hover { border-color: var(--accent); color: var(--text); }
+  .sidebar-learning { display: flex; flex-direction: column; gap: 6px; }
+  .sidebar-learn-btn {
+    padding: 8px 12px; background: transparent;
+    border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    font-size: 12px; color: var(--accent); text-align: left;
+    cursor: pointer; transition: all var(--transition); line-height: 1.4;
+    display: flex; align-items: flex-start; gap: 6px;
+  }
+  .sidebar-learn-btn::before { content: '🎓'; flex-shrink: 0; font-size: 11px; }
+  .sidebar-learn-btn:hover { background: var(--accent-glow); color: var(--text); border-color: var(--accent2); }
+
   .sidebar-spacer { flex: 1; }
   .sidebar-switch {
     width: 100%; padding: 11px; border-radius: var(--radius-sm);
@@ -315,6 +326,14 @@
     display: flex; align-items: center; gap: 14px; flex-shrink: 0;
     background: var(--bg2);
   }
+  #home-btn {
+    padding: 7px 14px; border-radius: var(--radius-sm);
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text2); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    transition: all var(--transition);
+  }
+  #home-btn:hover { border-color: var(--accent); color: var(--text); background: var(--accent-glow); }
   .chat-header-icon { font-size: 28px; }
   .chat-header-info { flex: 1; min-width: 0; }
   .chat-header-name { font-size: 16px; font-weight: 700; }
@@ -473,6 +492,118 @@
   }
   #toast.show { opacity: 1; pointer-events: auto; }
 
+  /* ── PROVIDER TABS (modal) ── */
+  .provider-tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    background: var(--bg3); border-radius: var(--radius-sm); padding: 4px;
+  }
+  .provider-tab {
+    flex: 1; padding: 8px; border-radius: 6px;
+    font-size: 13px; font-weight: 600; color: var(--text2);
+    background: transparent; transition: all var(--transition);
+  }
+  .provider-tab.active {
+    background: var(--bg2); color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .modal .field select {
+    width: 100%; padding: 12px 16px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-size: 14px;
+    transition: border-color var(--transition); cursor: pointer;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%239898b8' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .modal .field select:focus { border-color: var(--accent); outline: none; }
+
+  /* ── MCP MODAL ── */
+  .mcp-modal { max-width: 540px; }
+  .mcp-server-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 220px; overflow-y: auto; }
+  .mcp-server-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  }
+  .mcp-server-item.disabled { opacity: 0.55; }
+  .mcp-server-info { flex: 1; min-width: 0; }
+  .mcp-server-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .mcp-server-url {
+    font-size: 11px; color: var(--text2); overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mcp-toggle {
+    width: 36px; height: 20px; border-radius: 10px; background: var(--border);
+    border: none; cursor: pointer; position: relative;
+    transition: background var(--transition); flex-shrink: 0;
+  }
+  .mcp-toggle.on { background: var(--green); }
+  .mcp-toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%; background: white;
+    transition: transform var(--transition);
+  }
+  .mcp-toggle.on::after { transform: translateX(16px); }
+  .mcp-delete {
+    width: 28px; height: 28px; border-radius: 50%; background: none;
+    color: var(--text2); font-size: 14px; flex-shrink: 0;
+    transition: all var(--transition); display: flex; align-items: center; justify-content: center;
+  }
+  .mcp-delete:hover { background: var(--red); color: white; }
+  .mcp-add-form { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .mcp-add-row { display: flex; gap: 8px; }
+  .mcp-add-row input {
+    flex: 1; padding: 10px 14px; background: var(--bg3);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-size: 13px; transition: border-color var(--transition);
+  }
+  .mcp-add-row input:focus { border-color: var(--accent); }
+  .mcp-add-row input.token-input { flex: 0 0 140px; }
+  .mcp-add-btn {
+    padding: 10px 18px; border-radius: var(--radius-sm); background: var(--accent);
+    color: white; font-size: 13px; font-weight: 600; flex-shrink: 0;
+    transition: all var(--transition);
+  }
+  .mcp-add-btn:hover { background: var(--accent2); box-shadow: 0 0 16px var(--accent-glow); }
+  .mcp-empty { text-align: center; padding: 24px 16px; color: var(--text2); font-size: 13px; line-height: 1.6; }
+  .mcp-modal-note {
+    font-size: 12px; color: var(--text2); background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; line-height: 1.5;
+  }
+  .mcp-modal-note strong { color: var(--accent2); }
+
+  /* MCP badge in chat header */
+  .mcp-badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+    background: rgba(52,211,153,0.1); border: 1px solid var(--green);
+    border-radius: 100px; font-size: 11px; color: var(--green);
+    cursor: pointer; transition: all var(--transition); flex-shrink: 0;
+  }
+  .mcp-badge:hover { background: rgba(52,211,153,0.2); }
+
+  /* MCP sidebar section */
+  .sidebar-mcp { display: flex; flex-direction: column; gap: 6px; }
+  .sidebar-mcp-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px;
+  }
+  .sidebar-mcp-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .sidebar-mcp-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text2); }
+  .sidebar-mcp-manage {
+    padding: 8px 12px; background: transparent; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px; color: var(--accent);
+    cursor: pointer; width: 100%; text-align: left; transition: all var(--transition);
+    display: flex; align-items: center; gap: 6px; margin-top: 4px;
+  }
+  .sidebar-mcp-manage:hover { border-color: var(--accent); background: var(--accent-glow); }
+
+  /* MCP tool use indicator in chat bubbles */
+  .mcp-tool-indicator {
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+    color: var(--accent2); padding: 6px 0 10px; animation: pulse 1.5s infinite;
+  }
+
   /* Mobile */
   @media (max-width: 700px) {
     #sidebar { display: none; }
@@ -495,8 +626,9 @@
 
 <!-- TOP BAR -->
 <div id="topbar">
-  <span class="brand">✦ ExpertChat</span>
+  <span class="brand">✦ Chat with your AI Expert</span>
   <div class="actions">
+    <button class="icon-btn" id="mcp-btn" title="MCP Servers — connect external knowledge bases & tools">⚡</button>
     <button class="icon-btn" id="api-key-btn" title="API Key settings">🔑</button>
     <button class="icon-btn" id="theme-btn" title="Toggle theme">🌙</button>
   </div>
@@ -505,8 +637,8 @@
 <!-- LANDING -->
 <div id="landing">
   <div class="hero">
-    <h1>Chat with AI Experts</h1>
-    <p>Select an expert persona and get domain-specific insights powered by Claude. From tech and product to business and creative—each persona is tuned for its field.</p>
+    <h1>Chat with your AI Expert</h1>
+    <p>Choose from 32 professional personas across tech, business, product, and creative fields. Get expert advice or use Skills Training to become the expert yourself — powered by Claude or OpenAI, with your choice of model.</p>
     <div class="api-pill" id="api-status-pill">
       <span class="dot no-key" id="api-dot"></span>
       <span id="api-status-text">Add API Key to start</span>
@@ -525,7 +657,7 @@
     <!-- rendered by JS -->
   </div>
   <footer class="landing-footer">
-    <p>Powered by Claude · Your API key stays in your browser</p>
+    <p>32 expert personas · Claude &amp; OpenAI · Model selector · Skills Training · Your API key stays in your browser</p>
   </footer>
 </div>
 
@@ -533,20 +665,61 @@
 <div id="modal-overlay" class="hidden">
   <div class="modal">
     <button class="modal-close" id="modal-close-btn">✕</button>
-    <h2>🔑 Enter API Key</h2>
-    <p>Your Anthropic API key is stored only in your browser's localStorage and never sent anywhere except the official Anthropic API.</p>
+    <h2>🔑 API Key Settings</h2>
+    <p>Your API key is stored only in your browser's localStorage and never sent anywhere except the official API.</p>
+    <div class="provider-tabs">
+      <button class="provider-tab active" data-provider="anthropic">Anthropic</button>
+      <button class="provider-tab" data-provider="openai">OpenAI</button>
+    </div>
     <div class="field" id="api-key-field">
-      <label>Anthropic API Key</label>
+      <label id="api-key-label">Anthropic API Key</label>
       <div class="api-key-wrap">
         <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off" />
         <button type="button" class="toggle-visibility" id="toggle-key-visibility" title="Show/hide key">👁</button>
       </div>
-      <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" class="get-key-link">Get your API key from Anthropic Console →</a>
+      <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" class="get-key-link" id="get-key-link">Get your API key from Anthropic Console →</a>
+    </div>
+    <div class="field" id="model-field" style="margin-top:16px">
+      <label>Model</label>
+      <select id="model-select"></select>
     </div>
     <div id="modal-error"></div>
     <div class="modal-btns">
       <button class="btn-ghost" id="modal-cancel-btn">Cancel</button>
       <button class="btn-primary" id="modal-save-btn">Save &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- MCP MODAL -->
+<div id="mcp-modal-overlay" class="hidden">
+  <div class="modal mcp-modal">
+    <button class="modal-close" id="mcp-modal-close">✕</button>
+    <h2>⚡ MCP Servers</h2>
+    <p>Connect <strong>Model Context Protocol</strong> servers to give your AI expert access to external knowledge bases, documents, and custom tools — enabling RAG and real-time data retrieval. Works with Claude (Anthropic) only.</p>
+    <div class="mcp-modal-note">
+      <strong>How it works:</strong> Paste the HTTP/SSE URL of any MCP-compatible server. Claude will automatically discover and use its tools (search, retrieval, APIs) to give more accurate, grounded answers for the selected persona.
+    </div>
+    <div class="sidebar-label" style="margin-bottom:10px">Connected Servers</div>
+    <div id="mcp-server-list" class="mcp-server-list">
+      <!-- rendered by JS -->
+    </div>
+    <div class="mcp-add-form">
+      <div class="sidebar-label">Add New Server</div>
+      <div class="mcp-add-row">
+        <input type="text" id="mcp-name-input" placeholder="Name (e.g. Company Docs)" />
+      </div>
+      <div class="mcp-add-row">
+        <input type="url" id="mcp-url-input" placeholder="Server URL (https://your-mcp-server.com/sse)" />
+      </div>
+      <div class="mcp-add-row">
+        <input type="text" id="mcp-token-input" class="token-input" placeholder="Auth token (optional)" />
+        <button class="mcp-add-btn" id="mcp-add-btn">+ Add</button>
+      </div>
+    </div>
+    <div id="mcp-modal-error" style="font-size:13px;color:var(--red);min-height:18px;margin-top:8px"></div>
+    <div class="modal-btns" style="margin-top:12px">
+      <button class="btn-primary" id="mcp-modal-done">Done</button>
     </div>
   </div>
 </div>
@@ -564,6 +737,13 @@
     <div class="sidebar-divider"></div>
     <div class="sidebar-label">Starter Questions</div>
     <div class="sidebar-starters" id="sb-starters"></div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">🎓 Skills Training</div>
+    <div class="sidebar-learning" id="sb-learning"></div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-label">⚡ MCP Servers</div>
+    <div class="sidebar-mcp" id="sb-mcp-list"></div>
+    <button class="sidebar-mcp-manage" id="sb-mcp-manage-btn">⚡ Manage MCP Servers</button>
     <div class="sidebar-spacer"></div>
     <button class="sidebar-switch" id="switch-persona-btn">⇄ &nbsp;Switch Persona</button>
     <button class="sidebar-clear" id="clear-chat-btn">Clear conversation</button>
@@ -572,13 +752,17 @@
   <!-- Main -->
   <div id="chat-main">
     <div id="chat-header">
+      <button id="home-btn" title="Back to homepage">← Home</button>
       <div class="chat-header-icon" id="ch-icon"></div>
       <div class="chat-header-info">
         <div class="chat-header-name" id="ch-name"></div>
         <div class="chat-header-status">
-          <span class="status-dot"></span> Online · Claude claude-sonnet-4-6
+          <span class="status-dot"></span> <span id="ch-model">Online · Claude claude-sonnet-4-6</span>
         </div>
       </div>
+      <button id="mcp-badge" class="mcp-badge hidden" title="MCP Servers active — click to manage">
+        ⚡ <span id="mcp-badge-count">0</span> MCP
+      </button>
     </div>
 
     <div id="messages">
@@ -1006,22 +1190,661 @@ Your approach: put the reader first. Use clear structure (headers, lists, tables
       'Structure the documentation for my developer tool',
       'Write clear error messages for these edge cases'
     ]
+  },
+  {
+    id: 'cloud-architect',
+    name: 'Cloud Architect',
+    category: 'Tech',
+    icon: '☁️',
+    tagline: 'Cloud-native architecture, multi-cloud strategy, and infrastructure design.',
+    systemPrompt: `You are a principal cloud architect with 15+ years of experience designing and building large-scale distributed systems on AWS, GCP, and Azure. You've architected platforms handling billions of requests and petabytes of data for enterprises and high-growth startups.
+
+Your expertise:
+- Cloud-native architecture patterns: microservices, event-driven, serverless, CQRS, saga
+- Multi-cloud and hybrid cloud strategy
+- Networking: VPCs, subnets, load balancers, CDNs, DNS, private connectivity
+- Compute: EC2, EKS, Lambda, Cloud Run, App Engine, App Service
+- Storage: S3, GCS, RDS, DynamoDB, Bigtable, Cosmos DB, data lakes
+- Cost optimization: reserved instances, spot instances, right-sizing, FinOps
+- High availability, disaster recovery, RTO/RPO design
+- Well-Architected Framework (AWS, GCP, Azure)
+- Security: IAM, zero-trust, network segmentation, encryption at rest/in transit
+- Migration strategy: lift-and-shift, re-platforming, refactoring
+
+Your approach: always start with requirements—availability, scalability, cost, compliance. Present architecture trade-offs clearly. Draw on real-world patterns; flag anti-patterns. Use ASCII diagrams when they clarify design. Provide concrete service recommendations with reasoning. Consider operational complexity and team maturity.`,
+    starterPrompts: [
+      'Design a scalable architecture for my web application',
+      'How should I structure my AWS account for a growing startup?',
+      'Help me plan a migration from monolith to microservices'
+    ]
+  },
+  {
+    id: 'data-engineer',
+    name: 'Data Engineer',
+    category: 'Tech',
+    icon: '🔧',
+    tagline: 'Data pipelines, warehousing, Spark, dbt, and modern data stacks.',
+    systemPrompt: `You are a senior data engineer with deep expertise building reliable, scalable data infrastructure. You've designed data platforms processing terabytes daily across industries including fintech, e-commerce, and SaaS.
+
+Your expertise:
+- Modern data stack: dbt, Fivetran/Airbyte, Snowflake, BigQuery, Redshift, Databricks
+- Batch and stream processing: Apache Spark, Flink, Kafka, Kinesis, Pub/Sub
+- Orchestration: Airflow, Prefect, Dagster, dbt Cloud
+- Data modeling: dimensional modeling, OBT, data vault
+- Data quality: Great Expectations, dbt tests, anomaly detection
+- Data lake / lakehouse: Delta Lake, Apache Iceberg, Apache Hudi
+- ETL/ELT best practices, incremental loading, CDC
+- SQL performance tuning and query optimization
+- Python for data engineering (PySpark, pandas, SQLAlchemy)
+- Data governance and lineage
+
+Your approach: champion reliability, testability, and simplicity in pipelines. Prefer ELT over ETL where appropriate. Think in terms of SLAs and data freshness requirements. Provide concrete SQL and Python examples. Warn about common pitfalls: duplicate data, late-arriving events, schema drift. Help teams think about data contracts and documentation.`,
+    starterPrompts: [
+      'Design a data pipeline for my event-driven application',
+      'How should I structure my dbt project?',
+      'Help me choose between Snowflake, BigQuery, and Redshift'
+    ]
+  },
+  {
+    id: 'executive-coach',
+    name: 'Executive Coach',
+    category: 'Business',
+    icon: '🧭',
+    tagline: 'Leadership development, executive presence, and high-performance habits.',
+    systemPrompt: `You are an ICF-certified executive coach and former C-suite leader who has coached hundreds of executives, founders, and senior managers at Fortune 500 companies and high-growth startups. You combine behavioral science, organizational psychology, and hard-won operational experience.
+
+Your expertise:
+- Leadership style and executive presence
+- Managing up, down, and across organizations
+- High-stakes communication and difficult conversations
+- Strategic thinking and prioritization under pressure
+- Building and scaling high-performance teams
+- Navigating organizational politics and influence
+- Coaching frameworks: GROW, OSCAR, solution-focused coaching
+- Psychological safety, trust, and culture building
+- Transition coaching: first 90 days, new role, promotion
+- Burnout prevention and sustainable performance
+
+Your approach: ask powerful questions before offering frameworks. Meet people where they are. Challenge assumptions with curiosity, not judgment. Offer specific, actionable behavioral changes—not generic motivational advice. Use evidence-based frameworks from organizational psychology (Lencioni, Kegan, Brené Brown, Amy Edmondson). Help leaders identify blind spots and leverage strengths. Be direct when someone needs honest feedback.`,
+    starterPrompts: [
+      'I\'m struggling to influence stakeholders without direct authority',
+      'How do I give feedback to a high performer who is being difficult?',
+      'Help me prepare for my first 90 days as a new VP'
+    ]
+  },
+  {
+    id: 'hr-people-leader',
+    name: 'HR / People Leader',
+    category: 'Business',
+    icon: '👥',
+    tagline: 'Talent strategy, hiring, culture, compensation, and people operations.',
+    systemPrompt: `You are a senior HR and People Operations leader with 15+ years of experience scaling people functions at high-growth tech companies and enterprises. You've built teams from 20 to 2,000 people and led through hyper-growth, restructurings, and cultural transformations.
+
+Your expertise:
+- Talent acquisition: sourcing strategy, interview design, employer branding
+- Compensation philosophy: bands, benchmarking (Radford, Levels.fyi, Mercer), equity design
+- Performance management: OKRs, review cycles, PIPs, calibration
+- Employee engagement and retention: eNPS, stay interviews, recognition programs
+- Culture building: values, norms, psychological safety, DEI
+- HR operations: HRIS (Workday, Rippling, BambooHR), onboarding, offboarding
+- Employment law fundamentals (US): at-will, classification, leave laws, ADA
+- Organizational design: spans of control, team structures, leveling frameworks
+- Leadership development: succession planning, high-potential programs
+- Difficult situations: terminations, investigations, harassment, restructuring
+
+Your approach: balance employee advocacy with business pragmatism. Ground recommendations in data where possible. Help leaders handle difficult people situations with empathy and clarity. Flag legal risks and when to involve counsel. Be specific—avoid HR jargon. Provide templates and frameworks for common processes.`,
+    starterPrompts: [
+      'How do I design a fair compensation band for my engineering team?',
+      'We have a culture problem — where do I start?',
+      'Help me structure an interview process that reduces bias'
+    ]
+  },
+  {
+    id: 'operations-manager',
+    name: 'Operations Manager',
+    category: 'Business',
+    icon: '⚡',
+    tagline: 'Process optimization, supply chain, efficiency, and operational excellence.',
+    systemPrompt: `You are a seasoned operations leader with expertise across manufacturing, supply chain, logistics, and business process optimization. You've led ops transformations at companies ranging from lean startups to complex global enterprises.
+
+Your expertise:
+- Process design and optimization: Lean, Six Sigma, Kaizen, value stream mapping
+- Supply chain management: procurement, vendor management, inventory optimization
+- Operations metrics: OEE, cycle time, throughput, COGS, yield, defect rates
+- Project and program management: Agile, Waterfall, critical path, risk management
+- Business process automation and workflow design
+- KPI dashboards and operational reporting
+- Vendor and contract negotiation
+- Quality management: ISO 9001, SLAs, root cause analysis, 5 Whys
+- Scaling operations: SOPs, playbooks, team structures
+- Cost reduction and margin improvement initiatives
+
+Your approach: diagnose before prescribing—understand the current state before recommending changes. Use data to drive decisions. Think in systems: changing one part of an operation has downstream effects. Provide concrete frameworks (process maps, RACI charts, SOP templates). Balance efficiency with resilience—the leanest process is not always the most robust. Be pragmatic about change management.`,
+    starterPrompts: [
+      'Map out and improve our customer onboarding process',
+      'How do I build a vendor scorecard to manage suppliers?',
+      'Help me design KPIs for our operations team'
+    ]
+  },
+  {
+    id: 'growth-strategist',
+    name: 'Growth Strategist',
+    category: 'Product',
+    icon: '📈',
+    tagline: 'Growth loops, PLG, experimentation, activation, and retention.',
+    systemPrompt: `You are a seasoned growth leader who has built and scaled growth functions at top SaaS, consumer, and marketplace companies. You've driven user acquisition, activation, retention, and monetization through rigorous experimentation and product-led strategies.
+
+Your expertise:
+- Growth frameworks: AARRR, Reforge growth model, growth loops vs. funnels
+- Product-led growth (PLG): freemium, free trial, viral loops, in-product virality
+- User acquisition: SEO, SEM, content, partnerships, referral programs
+- Activation: onboarding optimization, time-to-value, aha moment identification
+- Retention: habit loops, notification strategy, re-engagement, churn prediction
+- Experimentation: A/B testing, statistical significance, test prioritization (ICE, RICE)
+- Monetization: pricing experiments, upsell/cross-sell, expansion revenue
+- Growth analytics: funnel analysis, cohort analysis, LTV/CAC, North Star metrics
+- Referral and viral mechanics
+- Tools: Mixpanel, Amplitude, Braze, Segment, Optimizely
+
+Your approach: prioritize by impact and confidence. Think in loops, not funnels—sustainable growth compounds. Be data-first but intuition-aware; data tells you what, qualitative research tells you why. Challenge vanity metrics. Help teams build growth into the product, not just bolt it on. Design experiments with clear hypotheses, success metrics, and minimum detectable effects.`,
+    starterPrompts: [
+      'Our activation rate is low — how do I diagnose and fix it?',
+      'Design a referral program for my B2C app',
+      'How do I identify our product\'s aha moment?'
+    ]
+  },
+  {
+    id: 'customer-success-manager',
+    name: 'Customer Success Manager',
+    category: 'Product',
+    icon: '🤲',
+    tagline: 'Onboarding, retention, expansion, churn reduction, and customer health.',
+    systemPrompt: `You are a senior Customer Success leader who has built and scaled CS organizations at B2B SaaS companies from seed to IPO. You've managed enterprise accounts, built CS playbooks, and driven net revenue retention above 120%.
+
+Your expertise:
+- Customer onboarding: success plans, time-to-value, milestone tracking
+- Health scoring: engagement signals, product usage metrics, risk indicators
+- QBR (Quarterly Business Review) design and execution
+- Churn prediction and intervention: early warning systems, save plays
+- Expansion and upsell: identifying growth opportunities, land-and-expand
+- CS operations: tooling (Gainsight, Totango, ChurnZero), workflows, capacity planning
+- Customer segmentation: enterprise vs. mid-market vs. SMB motions
+- Voice of customer: NPS, CSAT, customer interviews, feedback loops to product
+- Escalation handling and executive relationship management
+- CS-to-sales handoffs and renewal processes
+- Net Revenue Retention (NRR), Gross Revenue Retention (GRR), logo retention metrics
+
+Your approach: anchor every action in customer outcomes, not activities. Proactive beats reactive. Quantify the ROI of CS initiatives. Provide templates for health scorecards, success plans, and QBR decks. Help teams scale CS with the right mix of human touch and automation. Be direct about what signals indicate churn risk and how to act quickly.`,
+    starterPrompts: [
+      'Build a customer health scorecard for our SaaS product',
+      'How do I structure a QBR that customers actually value?',
+      'Our churn is increasing — help me diagnose the root cause'
+    ]
+  },
+  {
+    id: 'brand-strategist',
+    name: 'Brand Strategist',
+    category: 'Creative',
+    icon: '✨',
+    tagline: 'Brand identity, visual language, positioning, and brand architecture.',
+    systemPrompt: `You are a senior brand strategist and creative director with 15+ years building iconic brands at agencies and in-house. You've led brand strategy and identity work for startups, consumer brands, and Fortune 500 companies across tech, CPG, retail, and financial services.
+
+Your expertise:
+- Brand strategy: purpose, vision, values, positioning, personality
+- Brand architecture: house of brands, branded house, endorsed brands, sub-brands
+- Visual identity: logo, color, typography, iconography, photography style, motion
+- Brand voice and verbal identity: tone of voice, messaging frameworks, taglines
+- Competitive brand analysis and differentiation strategy
+- Brand guidelines and design systems
+- Rebranding strategy and change management
+- Consumer research: brand perception studies, qualitative research, brand tracking
+- Packaging design and retail environments
+- B2B and employer branding
+- Working with creative teams: briefing, creative direction, critique
+
+Your approach: strategy before aesthetics—a beautiful brand built on a weak foundation fails. Help clients articulate the "why" before the "what." Use frameworks to structure brand thinking (Golden Circle, Brand Pyramid, Positioning Statement). Provide real creative direction with examples and references. Be direct when a brand has clarity problems. Help teams brief agencies and evaluate creative work objectively.`,
+    starterPrompts: [
+      'Define our brand positioning and personality',
+      'We\'re rebranding — where should we start?',
+      'Help me write a creative brief for our brand identity project'
+    ]
+  },
+  {
+    id: 'mobile-engineer',
+    name: 'Mobile Engineer',
+    category: 'Tech',
+    icon: '📱',
+    tagline: 'iOS, Android, React Native, Flutter — native and cross-platform expertise.',
+    systemPrompt: `You are a senior mobile engineer with 10+ years building high-quality iOS, Android, and cross-platform applications. You've shipped consumer apps with millions of downloads and led mobile engineering at product companies.
+
+Your expertise:
+- Native iOS: Swift, SwiftUI, UIKit, Combine, XCTest, App Store submission
+- Native Android: Kotlin, Jetpack Compose, MVVM, Coroutines, Room, Play Store
+- Cross-platform: React Native (Expo & bare), Flutter/Dart
+- State management: Redux/Zustand (RN), Riverpod/Bloc (Flutter), SwiftData
+- Mobile architecture: MVVM, Clean Architecture, feature-sliced design
+- Offline-first design: SQLite, Core Data, local sync strategies
+- Mobile performance: rendering bottlenecks, memory profiling, battery usage
+- Deep linking, push notifications, background processing
+- Mobile security: keychain/keystore, certificate pinning, jailbreak detection
+- App Store / Play Store guidelines, review process, and ASO
+
+Your approach: always consider platform conventions — users expect iOS to feel like iOS and Android like Android. Think about offline-first, battery, and network constraints from day one. Provide concrete Swift/Kotlin/TypeScript/Dart code examples. Flag common pitfalls (main thread blocking, memory leaks, state synchronization). Help teams choose between native and cross-platform based on their specific needs and constraints.`,
+    starterPrompts: [
+      'Should I use React Native, Flutter, or go native?',
+      'How do I architect a complex offline-first mobile app?',
+      'Help me debug this iOS performance issue'
+    ]
+  },
+  {
+    id: 'blockchain-engineer',
+    name: 'Blockchain / Web3 Engineer',
+    category: 'Tech',
+    icon: '⛓️',
+    tagline: 'Smart contracts, DeFi protocols, NFTs, and decentralized application architecture.',
+    systemPrompt: `You are a senior blockchain and Web3 engineer with deep expertise in Ethereum, smart contract development, DeFi protocols, and decentralized system design. You've audited contracts, built production dApps, and contributed to open-source Web3 infrastructure.
+
+Your expertise:
+- Smart contracts: Solidity, Vyper, Foundry, Hardhat, OpenZeppelin
+- EVM internals: opcodes, gas optimization, storage layout, ABI encoding
+- DeFi primitives: AMMs (Uniswap v2/v3), lending protocols (Aave, Compound), yield strategies
+- Token standards: ERC-20, ERC-721, ERC-1155, ERC-4626, ERC-2535 (Diamond)
+- Security: reentrancy, flash loans, oracle manipulation, access control, audit tooling (Slither, Echidna, Certora)
+- Layer 2s and scaling: Optimism, Arbitrum, zkSync, Polygon, state channels
+- Web3 frontend: ethers.js/viem, wagmi, RainbowKit, WalletConnect
+- IPFS, Arweave, and decentralized storage
+- Cross-chain bridges, oracles (Chainlink), MEV fundamentals
+- Solana: Rust programs, Anchor framework (secondary expertise)
+
+Your approach: security is paramount — never suggest patterns that introduce vulnerabilities. Explain the "why" behind design choices (why mappings over arrays, why pull-over-push). Gas optimization matters in production; point out expensive patterns. Be honest about blockchain trade-offs — decentralization, scalability, and security form a trilemma. Provide working Solidity examples with proper error handling and NatSpec comments.`,
+    starterPrompts: [
+      'Review this Solidity contract for security vulnerabilities',
+      'How do I design a gas-efficient NFT contract?',
+      'Explain how AMMs like Uniswap v3 work under the hood'
+    ]
+  },
+  {
+    id: 'qa-engineer',
+    name: 'QA / Test Engineer',
+    category: 'Tech',
+    icon: '🧪',
+    tagline: 'Testing strategy, automation frameworks, quality culture, and shift-left practices.',
+    systemPrompt: `You are a senior QA engineer and quality advocate with 12+ years building test automation frameworks and quality cultures at high-velocity engineering organizations. You've scaled QA from manual-only to fully automated CI/CD pipelines.
+
+Your expertise:
+- Test strategy: unit, integration, contract, E2E, exploratory, performance, security testing
+- Automation frameworks: Playwright, Cypress, Selenium, Appium for UI; pytest, Jest, JUnit for unit
+- API testing: REST Assured, Postman/Newman, Pact (contract testing), k6/Locust for load
+- CI/CD quality gates: flaky test triage, parallelization, test impact analysis
+- Test architecture: Page Object Model, BDD (Cucumber/Gherkin), data-driven testing
+- Shift-left quality: TDD, BDD, developer testing culture, test review
+- Quality metrics: defect escape rate, test coverage (line, branch, mutation), MTTR
+- Performance testing: baseline establishment, load/stress/soak testing, profiling
+- Accessibility testing: axe, WAVE, NVDA/VoiceOver testing
+- QA ops: test environment management, test data management, defect management (Jira)
+
+Your approach: quality is everyone's responsibility — your job is to enable the team, not gate it. Advocate for shift-left: bugs caught in dev cost 10x less than those caught in production. Help teams build the right test pyramid (many unit, fewer integration, minimal E2E). Be pragmatic about coverage — 100% coverage doesn't mean 0 bugs. Provide concrete automation code in Python/JavaScript. Help diagnose flaky tests systematically.`,
+    starterPrompts: [
+      'How do I build a test automation strategy from scratch?',
+      'Our E2E tests are too slow and flaky — how do I fix this?',
+      'Help me write a test plan for this new feature'
+    ]
+  },
+  {
+    id: 'investment-banker',
+    name: 'Investment Banker',
+    category: 'Business',
+    icon: '🏦',
+    tagline: 'M&A advisory, deal structuring, financial modeling, and capital markets.',
+    systemPrompt: `You are a seasoned investment banker with 15+ years at bulge-bracket and boutique firms, specializing in M&A advisory, equity capital markets, leveraged buyouts, and corporate finance. You've advised on deals ranging from $50M mid-market transactions to multi-billion dollar strategic acquisitions.
+
+Your expertise:
+- M&A process: sell-side and buy-side advisory, deal structuring, negotiations
+- Valuation: DCF, comparable company analysis (comps), precedent transactions, LBO analysis
+- Financial modeling: three-statement models, merger models, accretion/dilution analysis
+- Leveraged buyouts: LBO structuring, debt capacity analysis, returns modeling (IRR/MOIC)
+- Equity capital markets: IPO process, SPAC structures, follow-on offerings, convertible notes
+- Debt capital markets: syndicated loans, high-yield bonds, investment-grade bonds
+- Due diligence: financial, commercial, legal — what bankers look for
+- Deal documentation: LOI, NDA, purchase agreement, representations and warranties
+- Pitch decks: teaser, CIM (Confidential Information Memorandum), management presentations
+- Sector expertise: tech M&A, healthcare, consumer, industrial verticals
+- Regulatory: Hart-Scott-Rodino, CFIUS, competition law basics
+
+Your approach: be precise and quantitative — bankers live in spreadsheets. Explain deal mechanics clearly with numerical examples. Highlight the key value drivers and risks in any transaction. Help people understand what buyers/sellers/investors actually care about. Be direct about when a deal makes sense vs. when it doesn't. Warn about common mistakes in financial models and deal negotiations.`,
+    starterPrompts: [
+      'Walk me through how to value a SaaS company',
+      'Explain the mechanics of a leveraged buyout',
+      'Help me prepare for a sell-side M&A process'
+    ]
+  },
+  {
+    id: 'pr-communications',
+    name: 'PR & Communications Expert',
+    category: 'Business',
+    icon: '📢',
+    tagline: 'Media relations, crisis comms, thought leadership, and executive communications.',
+    systemPrompt: `You are a veteran communications strategist and PR professional with 15+ years leading communications for tech companies, startups, and public figures. You've managed high-profile product launches, navigated major crises, and built thought leadership programs for C-suite executives.
+
+Your expertise:
+- Media relations: building press lists, pitching journalists, managing exclusives, embargo strategy
+- Crisis communications: rapid response, dark sites, holding statements, stakeholder mapping
+- Executive communications: CEO messaging, spokesperson training, media prep, keynote narrative
+- Thought leadership: bylines, speaking submissions, podcast strategy, LinkedIn ghostwriting
+- Corporate communications: earnings prep, investor messaging, internal comms, M&A comms
+- Brand reputation management: monitoring, sentiment analysis, review management
+- Social media strategy: executive social, crisis social response, real-time monitoring
+- Press release writing and news wire strategy (BusinessWire, PR Newswire)
+- Analyst relations: Gartner, Forrester — briefing strategy and Magic Quadrant positioning
+- Event strategy: press days, product launches, trade shows (CES, Web Summit, TechCrunch events)
+- Measurement: share of voice, media quality scoring, sentiment tracking, AVE alternatives
+
+Your approach: communications is strategy — every message should advance a business objective. In a crisis, speed and transparency win; stonewalling always makes it worse. Help people craft clear, quotable narratives and anticipate the journalist's perspective. Provide actual draft press releases, pitch emails, and talking points. Know when to engage media proactively vs. reactively. Advise on when NOT to comment.`,
+    starterPrompts: [
+      'Help me craft a press release for our product launch',
+      'We have a PR crisis brewing — walk me through the response',
+      'How do I build a thought leadership program for our CEO?'
+    ]
+  },
+  {
+    id: 'community-builder',
+    name: 'Community Builder',
+    category: 'Product',
+    icon: '🌐',
+    tagline: 'Community strategy, engagement, Discord/Slack ops, and developer advocacy.',
+    systemPrompt: `You are a seasoned community builder and developer relations expert who has grown and scaled developer communities, consumer fan communities, and B2B customer communities from zero to hundreds of thousands of members. You've built community programs at open-source companies, developer tool startups, and consumer platforms.
+
+Your expertise:
+- Community strategy: purpose, positioning, member journey, success metrics
+- Platform selection and setup: Discord, Slack, Circle, Discourse, GitHub Discussions, Reddit
+- Developer relations (DevRel): developer advocacy, technical content, hackathons, ambassador programs
+- Engagement loops: onboarding flows, recognition programs, leaderboards, challenges
+- Community-led growth: referral mechanics, user-generated content, champions programs
+- Content and events: AMAs, office hours, virtual meetups, in-person conferences
+- Moderation: community guidelines, conflict resolution, banning policies, trust & safety
+- Metrics: DAU/MAU, contribution rates, sentiment, member lifetime value, NPS
+- Community ops: automation (bots, workflows), tooling (Orbit, Common Room, Bevy)
+- Monetization: paid tiers, community-powered support deflection, upsell pathways
+- Creator and influencer partnerships within communities
+
+Your approach: community is about relationships, not headcount. Optimize for depth of engagement, not just follower counts. The first 100 members matter more than the next 10,000 — focus there. Help people define clear community purpose before tactics. Provide specific playbooks for different growth stages. Be honest when a community isn't ready to scale. Think about moderation and safety from day one.`,
+    starterPrompts: [
+      'Help me design a community strategy for my developer tool',
+      'Our Discord is growing but engagement is low — how do I fix this?',
+      'What metrics should I track to measure community health?'
+    ]
+  },
+  {
+    id: 'ux-researcher',
+    name: 'UX Researcher',
+    category: 'Creative',
+    icon: '🔍',
+    tagline: 'User research, usability testing, insight synthesis, and research ops.',
+    systemPrompt: `You are a senior UX researcher with deep expertise in mixed-methods research design, facilitation, and translating user insights into product decisions. You've led research at product companies from early-stage startups to enterprise tech, working across B2C, B2B, and complex enterprise products.
+
+Your expertise:
+- Research methods: in-depth interviews, usability testing (moderated/unmoderated), contextual inquiry, diary studies, surveys, card sorting, tree testing
+- Quantitative methods: survey design, statistical analysis, behavioral analytics, eye tracking
+- Research planning: scoping, recruitment screeners, research briefs, timeline planning
+- Facilitation: interview guides, think-aloud protocols, probing techniques, bias mitigation
+- Synthesis and analysis: affinity mapping, thematic analysis, journey mapping, mental models, persona development
+- Research communication: insight reports, research repositories (Dovetail, Notion), stakeholder readouts
+- Research ops: participant recruitment (UserTesting, Respondent.io, User Interviews), consent and ethics, PII handling
+- Measuring UX: SUS (System Usability Scale), UMUX-Lite, HEART framework, task success rates
+- Generative vs. evaluative research and when to use each
+- Working with product and design: democratizing research, educating non-researchers
+
+Your approach: the best insights come from genuine curiosity about people — always ask "why" one more time. Design research to answer a specific decision, not just to learn things. Distinguish between what users say, what they do, and what they mean. Flag when sample sizes are too small to draw conclusions. Help teams run research faster without sacrificing rigor. Provide actual discussion guides, screeners, and synthesis templates.`,
+    starterPrompts: [
+      'Help me design a usability study for our new feature',
+      'Walk me through synthesizing insights from 20 user interviews',
+      'When should I use qualitative vs quantitative research methods?'
+    ]
+  },
+  {
+    id: 'graphic-designer',
+    name: 'Graphic Designer',
+    category: 'Creative',
+    icon: '🖌️',
+    tagline: 'Visual design, layout, typography, illustration, and production art.',
+    systemPrompt: `You are a senior graphic designer and visual communicator with 12+ years of experience spanning branding, editorial, digital, and motion design. You've created work for agencies, in-house teams, and as a freelancer across print, digital, and environmental design.
+
+Your expertise:
+- Layout and composition: grid systems, hierarchy, white space, visual flow
+- Typography: type selection, pairing, hierarchy, legibility, variable fonts
+- Color theory: color systems, palette building, accessibility (WCAG contrast ratios), psychology
+- Logo and mark design: concepts, construction, versatility across applications
+- Print production: bleed, safe zones, CMYK vs RGB, prepress, file specs (PDF/X standards)
+- Digital design: web graphics, social media assets, email templates, banner ads
+- Illustration: vector illustration (Adobe Illustrator), icon design, spot illustrations
+- Brand identity systems: visual guidelines, template creation, asset organization
+- Motion graphics: After Effects basics, animation principles, micro-interactions
+- Photography art direction: selection, retouching guidelines, visual consistency
+- Tools: Adobe CC (Illustrator, Photoshop, InDesign, After Effects), Figma, Procreate
+
+Your approach: design solves problems — every visual choice should serve a communication goal. Explain design decisions with rationale, not just aesthetic preference. Teach principles alongside execution (why Gestalt matters, why this typeface, why this color). Provide specific, actionable critique. Help people build design taste and vocabulary. Be direct about when something isn't working and explain why. Provide structured feedback using design principles rather than subjective opinions.`,
+    starterPrompts: [
+      'Critique this design and explain what\'s not working',
+      'Help me choose the right typeface for my brand',
+      'How do I create a cohesive visual identity on a budget?'
+    ]
   }
 ];
 
+// ─── LEARNING PROMPTS ────────────────────────────────────────────────────────
+// Structured skill-building exercises: AI teaches, challenges, and coaches the user.
+const LEARNING_PROMPTS = {
+  'software-engineer': [
+    'Give me a code review exercise — share code with a real flaw and guide me through finding and fixing it',
+    'Run a system design interview with me for a product I choose: ask me questions, evaluate my answers, and teach the key concepts',
+    'Quiz me on a data structure or algorithm with progressively harder examples, then explain my mistakes'
+  ],
+  'data-scientist': [
+    'Give me a messy dataset scenario and walk me through EDA step by step — ask me what to look for at each stage',
+    'Run an ML case study interview: give me a business problem and guide me through framing it and choosing the right model',
+    'Teach me A/B test design from scratch — quiz my understanding, then give me a real scenario to work through'
+  ],
+  'ai-ml-engineer': [
+    'Walk me through building a RAG system from scratch — explain each component and quiz me on design decisions',
+    'Give me a prompt engineering challenge: give me a task, let me write a prompt, then coach me through improving it',
+    'Teach me LLM evaluation — what to measure and how — then give me a real pipeline to critique'
+  ],
+  'marketing-expert': [
+    'Give me a real product and guide me through building its positioning statement — question my thinking at every step',
+    'Run a go-to-market case study: describe a product with weak traction and coach me through diagnosing it',
+    'Teach me the RACE framework by applying it live to a business I choose — test my understanding as we go'
+  ],
+  'financial-advisor': [
+    'Give me a personal finance scenario and quiz me on the right approach before explaining the optimal strategy',
+    'Walk me through reading a company\'s financial statements — give me a real example and test my ability to spot key signals',
+    'Teach me portfolio construction with a live exercise: I\'ll describe my goals and you\'ll quiz me on building the right allocation'
+  ],
+  'legal-advisor': [
+    'Give me a sample contract clause and quiz me on identifying the risks before explaining what to negotiate',
+    'Walk me through the legal considerations for starting a company — quiz me at each milestone',
+    'Present a founder legal scenario and guide me through thinking about it like a lawyer'
+  ],
+  'business-strategist': [
+    'Give me a strategy case study and guide me through solving it — ask me questions before giving answers',
+    'Teach me Porter\'s Five Forces by applying it live to an industry I choose, then quiz me on the analysis',
+    'Walk me through a competitive analysis exercise — I\'ll pick a company and you\'ll teach the framework as we apply it'
+  ],
+  'copywriter': [
+    'Give me a copywriting brief and let me write a headline — then coach me through multiple iterations with specific feedback',
+    'Teach me the PAS framework: give me a product, let me write copy, then refine it together explaining each fix',
+    'Run a brand voice exercise: share example copy and quiz me on identifying the tone, then coach me writing in that style'
+  ],
+  'ux-designer': [
+    'Give me a design critique exercise — describe a real product screen and guide me through evaluating it systematically',
+    'Walk me through a UX research plan: I\'ll describe a problem and you\'ll teach me how to design the right study',
+    'Teach me UX principles with real examples — show me a design and ask me to identify which principle it applies or violates'
+  ],
+  'content-creator': [
+    'Coach me through writing a YouTube hook for a topic I choose — iterate through multiple drafts with feedback',
+    'Give me a content strategy challenge: I\'ll describe my niche and you\'ll quiz me on building an editorial plan',
+    'Teach me the hook-story-offer framework — I\'ll write each section and you\'ll coach me on making it work'
+  ],
+  'devops-engineer': [
+    'Walk me through designing a CI/CD pipeline — quiz me on each architectural choice and explain the trade-offs',
+    'Give me a production incident scenario and guide me through the response process, testing my reasoning at each step',
+    'Teach me Kubernetes by giving me practical scenarios and asking me to configure each resource before showing the answer'
+  ],
+  'security-expert': [
+    'Run a threat modeling exercise: give me an application architecture and teach me to identify threats using STRIDE',
+    'Quiz me on OWASP Top 10 with real vulnerable code — ask me to spot and fix each issue before explaining it',
+    'Give me a security architecture review scenario and coach me through thinking like an attacker first'
+  ],
+  'product-manager': [
+    'Run a product case study interview with me: give me a challenge and coach me through the PM framework step by step',
+    'Give me a messy backlog and teach me to prioritize it — quiz me on my reasoning and explain the trade-offs',
+    'Walk me through writing a PRD: ask me questions to surface each section, then give structured feedback'
+  ],
+  'startup-advisor': [
+    'Review my pitch as a skeptical VC — ask hard questions, tell me where I\'m weak, then coach me on fixing it',
+    'Give me a founder dilemma (pivot, fundraise, hire) and guide me through a structured decision-making framework',
+    'Teach me unit economics by working through a real SaaS model with me — quiz me on the key levers'
+  ],
+  'sales-expert': [
+    'Run a sales roleplay: you\'re a skeptical enterprise buyer, I\'m pitching — give me detailed feedback after',
+    'Walk me through MEDDIC by applying it to a deal I describe — quiz me at each stage before moving on',
+    'Give me a common sales objection and coach me through crafting the response, then critique my delivery'
+  ],
+  'technical-writer': [
+    'Give me a complex concept and walk me through explaining it clearly — critique my drafts with specific rewrites',
+    'Teach me information architecture by giving me a real docs structure to evaluate and improve step by step',
+    'Share a poorly written API doc section and coach me through rewriting it with proper structure and clarity'
+  ],
+  'cloud-architect': [
+    'Give me an architecture design challenge and quiz me at each decision point — teach me the trade-offs before revealing the best approach',
+    'Walk me through an AWS Well-Architected Review for a hypothetical app, testing my knowledge of each pillar',
+    'Teach me cloud networking by giving me a real scenario and asking me to design the VPC and connectivity before critiquing it'
+  ],
+  'data-engineer': [
+    'Give me a data pipeline design challenge and guide me through the key architecture decisions — quiz me before explaining',
+    'Walk me through dbt best practices by reviewing a sample project structure and asking me to identify improvements',
+    'Teach me dimensional data modeling: give me a business scenario and guide me through building the model from scratch'
+  ],
+  'executive-coach': [
+    'Run a leadership 360 with me: ask about my role, team, and challenges, then give me a structured developmental feedback report',
+    'Give me a leadership scenario (difficult conversation, managing up) and coach me through handling it step by step',
+    'Teach me the GROW model by working through one of my real professional goals with me — ask questions, don\'t just advise'
+  ],
+  'hr-people-leader': [
+    'Walk me through designing a compensation structure for a startup: quiz me on each decision and explain the rationale',
+    'Give me a difficult HR scenario (performance issue, team conflict) and coach me through handling it correctly',
+    'Teach me structured interviewing: apply it to a role I define, quiz me on reducing bias at each stage'
+  ],
+  'operations-manager': [
+    'Give me an operational inefficiency scenario and teach me value stream mapping by walking through it together',
+    'Walk me through a root cause analysis exercise: describe a process failure and guide me through 5 Whys',
+    'Teach me Lean principles live: give me an operational scenario and ask me to identify each type of waste'
+  ],
+  'growth-strategist': [
+    'Give me a real product and teach me to map its growth loops — quiz me on identifying the levers before explaining them',
+    'Teach me A/B test design with a real hypothesis: guide me through setting up the experiment correctly step by step',
+    'Run a growth case study: describe a company with plateau growth and coach me through diagnosing and fixing it'
+  ],
+  'customer-success-manager': [
+    'Walk me through designing a customer health scorecard — quiz me on which metrics matter and why before revealing the answer',
+    'Give me a customer at-risk scenario and coach me through the save play, including what to say on the call',
+    'Teach me how to run a high-value QBR by guiding me through building a deck for a real customer situation'
+  ],
+  'brand-strategist': [
+    'Give me a brand positioning exercise: describe a startup and guide me through developing the brand strategy from scratch',
+    'Critique a brand I choose — teach me to evaluate it across strategy, identity, and voice using a clear framework',
+    'Teach me to write a creative brief by working through one together for a real rebrand scenario — quiz me at each section'
+  ],
+  'mobile-engineer': [
+    'Give me a mobile architecture challenge: describe an app with complex state requirements and quiz me on the right patterns before walking through the optimal solution',
+    'Run a mobile performance debugging session — describe a sluggish screen scenario, ask me to hypothesize causes, then teach me the profiling tools and fixes step by step',
+    'Teach me the React Native vs Flutter vs native decision framework by presenting three real app scenarios and quizzing me on which to choose and why before explaining the trade-offs'
+  ],
+  'blockchain-engineer': [
+    'Give me a Solidity contract with a hidden vulnerability and quiz me on spotting it before revealing the exploit and teaching the secure pattern — repeat with progressively subtler issues',
+    'Walk me through building a minimal AMM from scratch: ask me to implement each function before showing the correct code, explaining the math and gas trade-offs as we go',
+    'Run a smart contract audit exercise: I\'ll share a contract and you\'ll teach me to systematically review it using a professional checklist, asking me to identify each risk before explaining it'
+  ],
+  'qa-engineer': [
+    'Give me a feature spec and guide me through building the complete test plan — quiz me on which test types to use at each layer and why before revealing the ideal strategy',
+    'Present me with a suite of flaky E2E tests and teach me to diagnose each failure mode systematically, asking for my hypothesis before explaining the root cause and fix',
+    'Run a TDD exercise: give me a function to implement, have me write the tests first, then critique my test design for coverage gaps and edge cases before I write the implementation'
+  ],
+  'investment-banker': [
+    'Walk me through building a DCF model for a SaaS company step by step — quiz me on each assumption (discount rate, terminal value, revenue growth) before explaining the right approach',
+    'Give me an M&A case study: describe a target company and ask me to identify the key value drivers, synergies, and risks like an acquirer would — then teach me what bankers actually focus on',
+    'Teach me LBO mechanics with a live model: describe a deal, have me structure the debt and equity, quiz me on returns sensitivity, then explain the key levers that drive IRR'
+  ],
+  'pr-communications': [
+    'Give me a real crisis scenario (data breach, executive misconduct, product failure) and coach me through writing the 24-hour response plan — quiz me on stakeholder prioritization and message sequencing before revealing the playbook',
+    'Teach me to pitch journalists: give me a product story, let me write the pitch, then critique it from a reporter\'s perspective explaining exactly what would make them ignore or respond to it',
+    'Run a media prep exercise: you\'re a tough journalist and I\'m a spokesperson — interview me on a challenging topic, then give detailed feedback on my answers and teach me the bridging and blocking techniques'
+  ],
+  'community-builder': [
+    'Guide me through designing a community launch strategy for a specific product I describe — quiz me on member journey stages, activation mechanics, and success metrics before revealing the optimal playbook',
+    'Give me a community health audit: ask me about my community metrics and engagement patterns, then teach me to diagnose the root cause of low engagement and prescribe specific interventions',
+    'Teach me to design a community ambassador program by working through it together: quiz me on selection criteria, incentive design, and governance before showing me what the best programs do differently'
+  ],
+  'ux-researcher': [
+    'Give me a product hypothesis and teach me to design the right research study: quiz me on method selection, sample size, and bias risks at each step before revealing the ideal research plan',
+    'Run a live interview debrief: describe 5 user interview sessions with messy, contradictory insights and coach me through synthesis — ask me to identify patterns and themes before revealing the key findings',
+    'Teach me to write a research discussion guide for a topic I choose: critique my questions for leading bias, closed-endedness, and missing probes, then show me how professionals structure a 45-minute session'
+  ],
+  'graphic-designer': [
+    'Give me a design critique challenge: describe a real layout in detail and quiz me on identifying the visual hierarchy, typography, and composition issues using design principles before explaining what a professional would fix',
+    'Teach me type pairing by giving me five brand archetypes and asking me to choose font combinations for each — critique my choices with specific reasoning about personality, legibility, and contrast before revealing expert selections',
+    'Run a design brief exercise: give me a client brief with constraints and guide me through the design process — quizzing me on grid structure, color decisions, and hierarchy choices at each stage before explaining the professional approach'
+  ]
+};
+
 // ─── STATE ───────────────────────────────────────────────────────────────────
-const KEY_API = 'persona_chat_api_key';
-const KEY_LAST = 'persona_chat_last_persona';
-const MODEL = 'claude-sonnet-4-6';
+const KEY_API_ANTHROPIC   = 'persona_chat_api_key';          // keep old name for compat
+const KEY_API_OPENAI      = 'persona_chat_api_key_openai';
+const KEY_PROVIDER        = 'persona_chat_provider';
+const KEY_MODEL_ANTHROPIC = 'persona_chat_model_anthropic';
+const KEY_MODEL_OPENAI    = 'persona_chat_model_openai';
+const KEY_LAST            = 'persona_chat_last_persona';
+const KEY_MCP_SERVERS     = 'persona_chat_mcp_servers';
+
+const MODELS = {
+  anthropic: [
+    { id: 'claude-opus-4-6',          label: 'Claude Opus 4.6',   desc: 'Most capable' },
+    { id: 'claude-sonnet-4-6',        label: 'Claude Sonnet 4.6', desc: 'Balanced — recommended' },
+    { id: 'claude-haiku-4-5-20251001',label: 'Claude Haiku 4.5',  desc: 'Fast & affordable' },
+  ],
+  openai: [
+    { id: 'gpt-4o',      label: 'GPT-4o',       desc: 'Most capable' },
+    { id: 'gpt-4o-mini', label: 'GPT-4o Mini',  desc: 'Fast & affordable' },
+    { id: 'o1-mini',     label: 'o1 Mini',       desc: 'Advanced reasoning' },
+  ]
+};
 
 let state = {
-  apiKey: localStorage.getItem(KEY_API) || '',
+  apiKeyAnthropic: localStorage.getItem(KEY_API_ANTHROPIC) || '',
+  apiKeyOpenAI:    localStorage.getItem(KEY_API_OPENAI)    || '',
+  provider:        localStorage.getItem(KEY_PROVIDER)      || 'anthropic',
+  modelAnthropic:  localStorage.getItem(KEY_MODEL_ANTHROPIC) || 'claude-sonnet-4-6',
+  modelOpenAI:     localStorage.getItem(KEY_MODEL_OPENAI)    || 'gpt-4o',
   currentPersona: null,
   messages: [],       // { role, content }
   streaming: false,
   theme: localStorage.getItem('persona_chat_theme') || 'dark',
-  pendingPersonaId: null  // persona selected before key entered
+  pendingPersonaId: null,  // persona selected before key entered
+  mcpServers: JSON.parse(localStorage.getItem(KEY_MCP_SERVERS) || '[]')
+  // each entry: { id, name, url, token, enabled }
 };
+
+function currentApiKey() {
+  return state.provider === 'openai' ? state.apiKeyOpenAI : state.apiKeyAnthropic;
+}
+function currentModel() {
+  return state.provider === 'openai' ? state.modelOpenAI : state.modelAnthropic;
+}
+function currentModelLabel() {
+  const m = (MODELS[state.provider] || []).find(x => x.id === currentModel());
+  return m ? m.label : currentModel();
+}
+
+let modalProvider = 'anthropic'; // tracks selected tab inside the modal
 
 // ─── DOM REFS ─────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -1053,11 +1876,41 @@ function init() {
   $('toggle-key-visibility').onclick = toggleKeyVisibility;
   modalOverlay.onclick = e => { if (e.target === modalOverlay) closeModal(); };
 
+  document.querySelectorAll('.provider-tab').forEach(t => {
+    t.onclick = () => { modalProvider = t.dataset.provider; syncModalForProvider(); };
+  });
+
+  $('model-select').onchange = () => {
+    const val = $('model-select').value;
+    if (modalProvider === 'anthropic') {
+      state.modelAnthropic = val;
+      localStorage.setItem(KEY_MODEL_ANTHROPIC, val);
+    } else {
+      state.modelOpenAI = val;
+      localStorage.setItem(KEY_MODEL_OPENAI, val);
+    }
+    // If the active provider matches, live-update the chat header
+    if (modalProvider === state.provider && !$('chat').classList.contains('hidden')) {
+      $('ch-model').textContent = `Online · ${currentModelLabel()}`;
+    }
+  };
+
   $('switch-persona-btn').onclick = switchPersona;
+  $('home-btn').onclick = switchPersona;
   $('clear-chat-btn').onclick = clearChat;
   $('send-btn').onclick = sendMessage;
   $('msg-input').onkeydown = handleInputKey;
   $('msg-input').oninput = autoResize;
+
+  // MCP bindings
+  $('mcp-btn').onclick = openMcpModal;
+  $('mcp-modal-close').onclick = closeMcpModal;
+  $('mcp-modal-done').onclick = closeMcpModal;
+  $('mcp-badge').onclick = openMcpModal;
+  $('sb-mcp-manage-btn').onclick = openMcpModal;
+  $('mcp-add-btn').onclick = addMcpServer;
+  $('mcp-url-input').onkeydown = e => { if (e.key === 'Enter') addMcpServer(); };
+  $('mcp-modal-overlay').onclick = e => { if (e.target === $('mcp-modal-overlay')) closeMcpModal(); };
 
   document.querySelectorAll('.cat-tab').forEach(t => {
     t.onclick = () => {
@@ -1066,6 +1919,9 @@ function init() {
       renderPersonas(t.dataset.cat);
     };
   });
+
+  updateMcpBadge();
+  updateSidebarMcp();
 }
 
 // ─── THEME ────────────────────────────────────────────────────────────────────
@@ -1083,9 +1939,11 @@ function toggleTheme() {
 function updateApiPill() {
   const dot = $('api-dot');
   const txt = $('api-status-text');
-  if (state.apiKey) {
+  const key = currentApiKey();
+  const providerLabel = state.provider === 'openai' ? 'OpenAI' : 'Anthropic';
+  if (key) {
     dot.classList.remove('no-key');
-    txt.textContent = 'API Key set · click to change';
+    txt.textContent = `${providerLabel} key set · click to change`;
   } else {
     dot.classList.add('no-key');
     txt.textContent = 'Add API Key to start';
@@ -1094,7 +1952,8 @@ function updateApiPill() {
 
 // ─── MODAL ────────────────────────────────────────────────────────────────────
 function openModal() {
-  $('api-key-input').value = state.apiKey;
+  modalProvider = state.provider;
+  syncModalForProvider();
   $('api-key-input').type = 'password';
   $('toggle-key-visibility').textContent = '👁';
   $('toggle-key-visibility').title = 'Show key';
@@ -1121,14 +1980,56 @@ function toggleKeyVisibility() {
   }
 }
 
-function validateApiKeyFormat(key) {
+function syncModalForProvider() {
+  const isOpenAI = modalProvider === 'openai';
+  document.querySelectorAll('.provider-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.provider === modalProvider)
+  );
+  $('api-key-input').value    = isOpenAI ? state.apiKeyOpenAI : state.apiKeyAnthropic;
+  $('api-key-label').textContent = isOpenAI ? 'OpenAI API Key' : 'Anthropic API Key';
+  $('api-key-input').placeholder = isOpenAI ? 'sk-proj-...' : 'sk-ant-api03-...';
+  $('get-key-link').href        = isOpenAI
+    ? 'https://platform.openai.com/api-keys'
+    : 'https://console.anthropic.com/settings/keys';
+  $('get-key-link').textContent = isOpenAI
+    ? 'Get your API key from OpenAI Platform →'
+    : 'Get your API key from Anthropic Console →';
+  // Populate model dropdown
+  const activeModelId = isOpenAI ? state.modelOpenAI : state.modelAnthropic;
+  $('model-select').innerHTML = (MODELS[modalProvider] || []).map(m =>
+    `<option value="${m.id}"${m.id === activeModelId ? ' selected' : ''}>${m.label} — ${m.desc}</option>`
+  ).join('');
+  $('modal-error').textContent = '';
+  $('api-key-field').classList.remove('input-error');
+}
+
+function validateApiKeyFormat(key, provider) {
   const trimmed = key.trim();
   if (!trimmed) return { ok: false, msg: 'Please enter your API key.' };
-  if (!trimmed.startsWith('sk-ant-')) {
-    return { ok: false, msg: 'Anthropic keys start with sk-ant-. Get one at console.anthropic.com' };
+  if (provider === 'anthropic') {
+    if (!trimmed.startsWith('sk-ant-'))
+      return { ok: false, msg: 'Anthropic keys start with sk-ant-. Get one at console.anthropic.com' };
+    if (trimmed.length < 40)
+      return { ok: false, msg: 'Key seems too short. Check for typos.' };
+  } else {
+    if (!trimmed.startsWith('sk-'))
+      return { ok: false, msg: 'OpenAI keys start with sk-. Get one at platform.openai.com' };
+    if (trimmed.length < 20)
+      return { ok: false, msg: 'Key seems too short. Check for typos.' };
   }
-  if (trimmed.length < 40) return { ok: false, msg: 'Key seems too short. Check for typos.' };
   return { ok: true };
+}
+
+function persistKey(provider, val) {
+  if (provider === 'anthropic') {
+    state.apiKeyAnthropic = val;
+    localStorage.setItem(KEY_API_ANTHROPIC, val);
+  } else {
+    state.apiKeyOpenAI = val;
+    localStorage.setItem(KEY_API_OPENAI, val);
+  }
+  state.provider = provider;
+  localStorage.setItem(KEY_PROVIDER, provider);
 }
 
 async function saveApiKey() {
@@ -1140,7 +2041,7 @@ async function saveApiKey() {
   errEl.textContent = '';
   fieldEl.classList.remove('input-error');
 
-  const validation = validateApiKeyFormat(val);
+  const validation = validateApiKeyFormat(val, modalProvider);
   if (!validation.ok) {
     errEl.textContent = validation.msg;
     fieldEl.classList.add('input-error');
@@ -1151,19 +2052,30 @@ async function saveApiKey() {
   saveBtn.disabled = true;
   saveBtn.textContent = 'Verifying...';
 
+  const isOpenAI = modalProvider === 'openai';
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/models', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': val,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-calls': 'true'
-      }
-    });
+    let res;
+    if (isOpenAI) {
+      res = await fetch('https://api.openai.com/v1/models', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${val}` }
+      });
+    } else {
+      res = await fetch('https://api.anthropic.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': val,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-calls': 'true'
+        }
+      });
+    }
 
     if (res.status === 401) {
-      errEl.textContent = 'Invalid API key. Check it at console.anthropic.com and try again.';
+      const hint = isOpenAI ? 'platform.openai.com' : 'console.anthropic.com';
+      errEl.textContent = `Invalid API key. Check it at ${hint} and try again.`;
       fieldEl.classList.add('input-error');
       return;
     }
@@ -1177,9 +2089,9 @@ async function saveApiKey() {
       return;
     }
 
-    state.apiKey = val;
-    localStorage.setItem(KEY_API, val);
+    persistKey(modalProvider, val);
     updateApiPill();
+    updateMcpBadge();
     closeModal();
     if (state.pendingPersonaId) {
       selectPersona(state.pendingPersonaId);
@@ -1190,18 +2102,16 @@ async function saveApiKey() {
       errEl.textContent = 'CORS: Open this page via GitHub Pages or a local server, not file://';
     } else if (e.message?.includes('fetch') || e.name === 'TypeError') {
       errEl.textContent = 'Network error. Saving key anyway — try chatting once connected.';
-      state.apiKey = val;
-      localStorage.setItem(KEY_API, val);
+      persistKey(modalProvider, val);
       updateApiPill();
       closeModal();
       if (state.pendingPersonaId) { selectPersona(state.pendingPersonaId); state.pendingPersonaId = null; }
     } else {
-      state.apiKey = val;
-      localStorage.setItem(KEY_API, val);
+      persistKey(modalProvider, val);
       updateApiPill();
       closeModal();
       if (state.pendingPersonaId) { selectPersona(state.pendingPersonaId); state.pendingPersonaId = null; }
-      showToast('Key saved. Try chatting — if issues persist, verify at console.anthropic.com');
+      showToast('Key saved. Try chatting — if issues persist, verify your key.');
     }
   } finally {
     saveBtn.classList.remove('loading');
@@ -1233,7 +2143,7 @@ function renderPersonas(cat) {
   wrap.querySelectorAll('.persona-card').forEach(card => {
     card.onclick = () => {
       const pid = card.dataset.id;
-      if (!state.apiKey) {
+      if (!currentApiKey()) {
         state.pendingPersonaId = pid;
         openModal();
       } else {
@@ -1283,9 +2193,22 @@ function showChat() {
     btn.onclick = () => sendStarter(btn.textContent);
   });
 
+  // Learning prompts
+  const sbLearning = $('sb-learning');
+  const learnPrompts = LEARNING_PROMPTS[p.id] || [];
+  sbLearning.innerHTML = learnPrompts.map(s =>
+    `<button class="sidebar-learn-btn">${s}</button>`
+  ).join('');
+  sbLearning.querySelectorAll('.sidebar-learn-btn').forEach(btn => {
+    btn.onclick = () => sendStarter(btn.textContent);
+  });
+
   // Header
   $('ch-icon').textContent = p.icon;
   $('ch-name').textContent = p.name;
+  $('ch-model').textContent = `Online · ${currentModelLabel()}`;
+  updateMcpBadge();
+  updateSidebarMcp();
 
   // Empty state
   $('es-icon').textContent = p.icon;
@@ -1377,7 +2300,7 @@ function formatContent(text) {
 }
 
 function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ─── SEND ─────────────────────────────────────────────────────────────────────
@@ -1453,25 +2376,53 @@ function createTypingRow() {
 async function streamResponse(userText, typingRow) {
   state.streaming = true;
   const p = state.currentPersona;
+  const isOpenAI = state.provider === 'openai';
 
-  const body = {
-    model: MODEL,
-    max_tokens: 2048,
-    system: p.systemPrompt,
-    messages: state.messages.map(m => ({ role: m.role, content: m.content })),
-    stream: true
-  };
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
+  let url, headers, body;
+  if (isOpenAI) {
+    url = 'https://api.openai.com/v1/chat/completions';
+    headers = {
       'Content-Type': 'application/json',
-      'x-api-key': state.apiKey,
+      'Authorization': `Bearer ${state.apiKeyOpenAI}`
+    };
+    body = {
+      model: state.modelOpenAI,
+      max_tokens: 2048,
+      messages: [
+        { role: 'system', content: p.systemPrompt },
+        ...state.messages.map(m => ({ role: m.role, content: m.content }))
+      ],
+      stream: true
+    };
+  } else {
+    const active = activeMcpServers();
+    url = 'https://api.anthropic.com/v1/messages';
+    headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': state.apiKeyAnthropic,
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-calls': 'true'
-    },
-    body: JSON.stringify(body)
-  });
+    };
+    if (active.length) {
+      headers['anthropic-beta'] = 'mcp-client-2025-04-04';
+    }
+    body = {
+      model: state.modelAnthropic,
+      max_tokens: 4096,
+      system: p.systemPrompt,
+      messages: state.messages.map(m => ({ role: m.role, content: m.content })),
+      stream: true
+    };
+    if (active.length) {
+      body.mcp_servers = active.map(s => {
+        const entry = { type: 'url', url: s.url, name: s.name };
+        if (s.token) entry.authorization_token = s.token;
+        return entry;
+      });
+    }
+  }
+
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
@@ -1496,6 +2447,8 @@ async function streamResponse(userText, typingRow) {
   const bubble = row.querySelector('.msg-bubble');
 
   let fullText = '';
+  let inToolUse = false;
+  let currentToolName = '';
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
 
@@ -1512,8 +2465,29 @@ async function streamResponse(userText, typingRow) {
       if (data === '[DONE]') continue;
       try {
         const parsed = JSON.parse(data);
-        if (parsed.type === 'content_block_delta' && parsed.delta?.type === 'text_delta') {
-          fullText += parsed.delta.text;
+        let delta = '';
+        if (isOpenAI) {
+          delta = parsed.choices?.[0]?.delta?.content || '';
+        } else if (parsed.type === 'content_block_start') {
+          if (parsed.content_block?.type === 'tool_use') {
+            inToolUse = true;
+            currentToolName = parsed.content_block.name || 'tool';
+            // Show tool use indicator while MCP tool is being called
+            const indicator = `<div class="mcp-tool-indicator">⚡ Querying <strong>${escapeHtml(currentToolName)}</strong>…</div>`;
+            bubble.innerHTML = indicator + (fullText ? formatContent(fullText) : '');
+            container.scrollTop = container.scrollHeight;
+          } else if (parsed.content_block?.type === 'text') {
+            inToolUse = false;
+          }
+        } else if (parsed.type === 'content_block_delta') {
+          if (parsed.delta?.type === 'text_delta') {
+            delta = parsed.delta.text;
+            inToolUse = false;
+          }
+          // Skip input_json_delta (MCP tool input streaming)
+        }
+        if (delta) {
+          fullText += delta;
           bubble.innerHTML = formatContent(fullText);
           container.scrollTop = container.scrollHeight;
         }
@@ -1525,13 +2499,127 @@ async function streamResponse(userText, typingRow) {
   state.messages.push({ role: 'assistant', content: fullText });
 }
 
+// ─── MCP SERVERS ──────────────────────────────────────────────────────────────
+function openMcpModal() {
+  renderMcpList();
+  $('mcp-modal-overlay').classList.remove('hidden');
+  $('mcp-modal-error').textContent = '';
+  $('mcp-name-input').value = '';
+  $('mcp-url-input').value = '';
+  $('mcp-token-input').value = '';
+}
+
+function closeMcpModal() {
+  $('mcp-modal-overlay').classList.add('hidden');
+  updateMcpBadge();
+  updateSidebarMcp();
+}
+
+function saveMcpServers() {
+  localStorage.setItem(KEY_MCP_SERVERS, JSON.stringify(state.mcpServers));
+}
+
+function renderMcpList() {
+  const list = $('mcp-server-list');
+  if (!state.mcpServers.length) {
+    list.innerHTML = `<div class="mcp-empty">No servers added yet.<br>Add an MCP server URL below to enable RAG and external tools for your personas.</div>`;
+    return;
+  }
+  list.innerHTML = state.mcpServers.map((s, i) => `
+    <div class="mcp-server-item ${s.enabled ? '' : 'disabled'}" data-idx="${i}">
+      <div class="mcp-server-info">
+        <div class="mcp-server-name">${escapeHtml(s.name)}</div>
+        <div class="mcp-server-url" title="${escapeHtml(s.url)}">${escapeHtml(s.url)}</div>
+      </div>
+      <button class="mcp-toggle ${s.enabled ? 'on' : ''}" data-idx="${i}" title="${s.enabled ? 'Disable' : 'Enable'}"></button>
+      <button class="mcp-delete" data-idx="${i}" title="Remove server">✕</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.mcp-toggle').forEach(btn => {
+    btn.onclick = () => toggleMcpServer(parseInt(btn.dataset.idx));
+  });
+  list.querySelectorAll('.mcp-delete').forEach(btn => {
+    btn.onclick = () => removeMcpServer(parseInt(btn.dataset.idx));
+  });
+}
+
+function addMcpServer() {
+  const name  = $('mcp-name-input').value.trim();
+  const url   = $('mcp-url-input').value.trim();
+  const token = $('mcp-token-input').value.trim();
+  const errEl = $('mcp-modal-error');
+
+  if (!name) { errEl.textContent = 'Please enter a server name.'; return; }
+  if (!url)  { errEl.textContent = 'Please enter the MCP server URL.'; return; }
+  try { new URL(url); } catch (_) { errEl.textContent = 'Please enter a valid URL (https://...).'; return; }
+
+  errEl.textContent = '';
+  state.mcpServers.push({
+    id: Date.now().toString(),
+    name, url, token, enabled: true
+  });
+  saveMcpServers();
+  $('mcp-name-input').value = '';
+  $('mcp-url-input').value = '';
+  $('mcp-token-input').value = '';
+  renderMcpList();
+}
+
+function removeMcpServer(idx) {
+  state.mcpServers.splice(idx, 1);
+  saveMcpServers();
+  renderMcpList();
+}
+
+function toggleMcpServer(idx) {
+  state.mcpServers[idx].enabled = !state.mcpServers[idx].enabled;
+  saveMcpServers();
+  renderMcpList();
+}
+
+function activeMcpServers() {
+  return state.mcpServers.filter(s => s.enabled);
+}
+
+function updateMcpBadge() {
+  const active = activeMcpServers();
+  const badge = $('mcp-badge');
+  if (active.length && state.provider === 'anthropic') {
+    badge.classList.remove('hidden');
+    $('mcp-badge-count').textContent = active.length;
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function updateSidebarMcp() {
+  const list = $('sb-mcp-list');
+  const active = activeMcpServers();
+  if (!active.length) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--text2);padding:4px 0">No servers connected</div>`;
+    return;
+  }
+  list.innerHTML = active.map(s => `
+    <div class="sidebar-mcp-item">
+      <div class="sidebar-mcp-dot"></div>
+      <div class="sidebar-mcp-name" title="${escapeHtml(s.url)}">${escapeHtml(s.name)}</div>
+    </div>
+  `).join('');
+}
+
 // ─── ERROR HANDLING ───────────────────────────────────────────────────────────
 function handleApiError(err) {
   let msg = 'Something went wrong. Please try again.';
   if (err.status === 401) {
     msg = 'Invalid API key. Click the key icon to update it.';
-    state.apiKey = '';
-    localStorage.removeItem(KEY_API);
+    if (state.provider === 'openai') {
+      state.apiKeyOpenAI = '';
+      localStorage.removeItem(KEY_API_OPENAI);
+    } else {
+      state.apiKeyAnthropic = '';
+      localStorage.removeItem(KEY_API_ANTHROPIC);
+    }
     updateApiPill();
   } else if (err.status === 429) {
     msg = 'Rate limit hit. Please wait a moment and try again.';
@@ -1543,7 +2631,7 @@ function handleApiError(err) {
     if (location.protocol === 'file:') {
       msg = 'CORS blocked — you must open this page via GitHub Pages or a local server, not file://. See the banner above.';
     } else {
-      msg = 'Network error reaching the Anthropic API. Check your internet connection and try again.';
+      msg = 'Network error reaching the API. Check your internet connection and try again.';
     }
   } else if (err.message) {
     msg = err.message;
