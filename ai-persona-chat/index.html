@@ -518,59 +518,111 @@
   }
   .modal .field select:focus { border-color: var(--accent); outline: none; }
 
-  /* ── MCP MODAL ── */
-  .mcp-modal { max-width: 540px; }
-  .mcp-server-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 220px; overflow-y: auto; }
+  /* ── MCP POPUP PANEL ── */
+  #mcp-popup {
+    position: fixed; top: 62px; right: 16px; z-index: 300;
+    width: 430px; max-height: calc(100vh - 80px);
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 12px 48px rgba(0,0,0,0.55);
+    display: flex; flex-direction: column; overflow: hidden;
+    transform-origin: top right;
+    transform: scale(0.94) translateY(-6px); opacity: 0;
+    transition: transform 0.16s cubic-bezier(.4,0,.2,1), opacity 0.16s ease;
+    pointer-events: none;
+  }
+  #mcp-popup.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: auto; }
+  #mcp-popup::before {
+    content: ''; position: absolute; top: -6px; right: 50px;
+    width: 10px; height: 10px; background: var(--bg2);
+    border: 1px solid var(--border); border-right: none; border-bottom: none;
+    transform: rotate(45deg); z-index: 1;
+  }
+  .mcp-popup-header {
+    padding: 14px 18px 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .mcp-popup-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .mcp-popup-subtitle { font-size: 11px; color: var(--text2); font-weight: 400; margin-top: 1px; }
+  .mcp-popup-close {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--bg3);
+    color: var(--text2); font-size: 16px; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: all var(--transition);
+  }
+  .mcp-popup-close:hover { background: var(--border); color: var(--text); }
+  .mcp-popup-body { padding: 14px 18px; overflow-y: auto; flex: 1; }
+  .mcp-popup-footer { padding: 12px 18px; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+  /* Server list */
+  .mcp-server-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
   .mcp-server-item {
-    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
     background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 12px; transition: border-color var(--transition);
   }
-  .mcp-server-item.disabled { opacity: 0.55; }
+  .mcp-server-item.disabled { opacity: 0.5; }
+  .mcp-server-item-top { display: flex; align-items: center; gap: 8px; }
   .mcp-server-info { flex: 1; min-width: 0; }
-  .mcp-server-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-  .mcp-server-url {
-    font-size: 11px; color: var(--text2); overflow: hidden;
-    text-overflow: ellipsis; white-space: nowrap;
+  .mcp-server-name { font-size: 13px; font-weight: 600; }
+  .mcp-server-url { font-size: 11px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mcp-server-status {
+    display: flex; align-items: center; gap: 5px; margin-top: 5px;
+    font-size: 11px; color: var(--text2);
   }
+  .mcp-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .mcp-status-dot.untested { background: var(--text2); }
+  .mcp-status-dot.testing  { background: var(--yellow); animation: pulse 1s infinite; }
+  .mcp-status-dot.ok       { background: var(--green); }
+  .mcp-status-dot.fail     { background: var(--red); }
+  .mcp-test-btn {
+    padding: 3px 8px; border-radius: 4px; background: var(--bg);
+    border: 1px solid var(--border); color: var(--text2); font-size: 11px;
+    cursor: pointer; flex-shrink: 0; transition: all var(--transition); font-family: inherit;
+  }
+  .mcp-test-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .mcp-test-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .mcp-toggle {
-    width: 36px; height: 20px; border-radius: 10px; background: var(--border);
-    border: none; cursor: pointer; position: relative;
-    transition: background var(--transition); flex-shrink: 0;
+    width: 34px; height: 18px; border-radius: 9px; background: var(--border);
+    border: none; cursor: pointer; position: relative; flex-shrink: 0;
+    transition: background var(--transition);
   }
   .mcp-toggle.on { background: var(--green); }
   .mcp-toggle::after {
     content: ''; position: absolute; top: 2px; left: 2px;
-    width: 16px; height: 16px; border-radius: 50%; background: white;
+    width: 14px; height: 14px; border-radius: 50%; background: white;
     transition: transform var(--transition);
   }
   .mcp-toggle.on::after { transform: translateX(16px); }
   .mcp-delete {
-    width: 28px; height: 28px; border-radius: 50%; background: none;
-    color: var(--text2); font-size: 14px; flex-shrink: 0;
-    transition: all var(--transition); display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: none;
+    color: var(--text2); font-size: 13px; flex-shrink: 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all var(--transition); border: none;
   }
   .mcp-delete:hover { background: var(--red); color: white; }
-  .mcp-add-form { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+  /* Add form */
+  .mcp-add-form { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .mcp-add-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); }
   .mcp-add-row { display: flex; gap: 8px; }
   .mcp-add-row input {
-    flex: 1; padding: 10px 14px; background: var(--bg3);
-    border: 1px solid var(--border); border-radius: var(--radius-sm);
-    color: var(--text); font-size: 13px; transition: border-color var(--transition);
+    flex: 1; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-size: 13px;
+    font-family: inherit; transition: border-color var(--transition);
   }
-  .mcp-add-row input:focus { border-color: var(--accent); }
-  .mcp-add-row input.token-input { flex: 0 0 140px; }
+  .mcp-add-row input:focus { border-color: var(--accent); outline: none; }
   .mcp-add-btn {
-    padding: 10px 18px; border-radius: var(--radius-sm); background: var(--accent);
+    padding: 9px 14px; border-radius: var(--radius-sm); background: var(--accent);
     color: white; font-size: 13px; font-weight: 600; flex-shrink: 0;
-    transition: all var(--transition);
+    border: none; cursor: pointer; transition: all var(--transition); font-family: inherit;
   }
-  .mcp-add-btn:hover { background: var(--accent2); box-shadow: 0 0 16px var(--accent-glow); }
-  .mcp-empty { text-align: center; padding: 24px 16px; color: var(--text2); font-size: 13px; line-height: 1.6; }
-  .mcp-modal-note {
-    font-size: 12px; color: var(--text2); background: var(--bg3); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; line-height: 1.5;
+  .mcp-add-btn:hover { background: var(--accent2); }
+  .mcp-empty { text-align: center; padding: 20px 12px; color: var(--text2); font-size: 13px; line-height: 1.6; }
+  .mcp-popup-note {
+    font-size: 11px; color: var(--text2); line-height: 1.5; padding: 8px 12px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: 12px;
   }
-  .mcp-modal-note strong { color: var(--accent2); }
+  .mcp-popup-note strong { color: var(--accent2); }
 
   /* MCP badge in chat header */
   .mcp-badge {
@@ -692,34 +744,35 @@
 </div>
 
 <!-- MCP MODAL -->
-<div id="mcp-modal-overlay" class="hidden">
-  <div class="modal mcp-modal">
-    <button class="modal-close" id="mcp-modal-close">✕</button>
-    <h2>⚡ MCP Servers</h2>
-    <p>Connect <strong>Model Context Protocol</strong> servers to give your AI expert access to external knowledge bases, documents, and custom tools — enabling RAG and real-time data retrieval. Works with Claude (Anthropic) only.</p>
-    <div class="mcp-modal-note">
-      <strong>How it works:</strong> Paste the HTTP/SSE URL of any MCP-compatible server. Claude will automatically discover and use its tools (search, retrieval, APIs) to give more accurate, grounded answers for the selected persona.
+<!-- MCP POPUP PANEL -->
+<div id="mcp-popup">
+  <div class="mcp-popup-header">
+    <div>
+      <div class="mcp-popup-title">⚡ MCP Servers</div>
+      <div class="mcp-popup-subtitle">Connect AI agents &amp; knowledge bases via Model Context Protocol</div>
     </div>
-    <div class="sidebar-label" style="margin-bottom:10px">Connected Servers</div>
+    <button class="mcp-popup-close" id="mcp-popup-close">✕</button>
+  </div>
+  <div class="mcp-popup-body">
+    <div class="mcp-popup-note">
+      <strong>Claude only.</strong> Add any MCP-compatible HTTP/SSE server URL. Claude will discover its tools (search, retrieval, agent APIs) and use them automatically during chat. Click <strong>Test</strong> to verify connectivity.
+    </div>
     <div id="mcp-server-list" class="mcp-server-list">
       <!-- rendered by JS -->
     </div>
     <div class="mcp-add-form">
-      <div class="sidebar-label">Add New Server</div>
+      <div class="mcp-add-label">Add Server</div>
       <div class="mcp-add-row">
         <input type="text" id="mcp-name-input" placeholder="Name (e.g. Company Docs)" />
       </div>
       <div class="mcp-add-row">
-        <input type="url" id="mcp-url-input" placeholder="Server URL (https://your-mcp-server.com/sse)" />
+        <input type="url" id="mcp-url-input" placeholder="https://your-mcp-server.com/sse" />
       </div>
       <div class="mcp-add-row">
-        <input type="text" id="mcp-token-input" class="token-input" placeholder="Auth token (optional)" />
+        <input type="text" id="mcp-token-input" placeholder="Auth token (optional)" />
         <button class="mcp-add-btn" id="mcp-add-btn">+ Add</button>
       </div>
-    </div>
-    <div id="mcp-modal-error" style="font-size:13px;color:var(--red);min-height:18px;margin-top:8px"></div>
-    <div class="modal-btns" style="margin-top:12px">
-      <button class="btn-primary" id="mcp-modal-done">Done</button>
+      <div id="mcp-modal-error" style="font-size:12px;color:var(--red);min-height:16px"></div>
     </div>
   </div>
 </div>
@@ -1903,14 +1956,19 @@ function init() {
   $('msg-input').oninput = autoResize;
 
   // MCP bindings
-  $('mcp-btn').onclick = openMcpModal;
-  $('mcp-modal-close').onclick = closeMcpModal;
-  $('mcp-modal-done').onclick = closeMcpModal;
-  $('mcp-badge').onclick = openMcpModal;
-  $('sb-mcp-manage-btn').onclick = openMcpModal;
+  $('mcp-btn').onclick = toggleMcpPopup;
+  $('mcp-popup-close').onclick = closeMcpModal;
+  $('mcp-badge').onclick = toggleMcpPopup;
+  $('sb-mcp-manage-btn').onclick = toggleMcpPopup;
   $('mcp-add-btn').onclick = addMcpServer;
   $('mcp-url-input').onkeydown = e => { if (e.key === 'Enter') addMcpServer(); };
-  $('mcp-modal-overlay').onclick = e => { if (e.target === $('mcp-modal-overlay')) closeMcpModal(); };
+  document.addEventListener('click', e => {
+    const popup = $('mcp-popup');
+    if (popup.classList.contains('open') && !popup.contains(e.target) &&
+        e.target !== $('mcp-btn') && e.target !== $('mcp-badge') && e.target !== $('sb-mcp-manage-btn')) {
+      closeMcpModal();
+    }
+  });
 
   document.querySelectorAll('.cat-tab').forEach(t => {
     t.onclick = () => {
@@ -2502,15 +2560,23 @@ async function streamResponse(userText, typingRow) {
 // ─── MCP SERVERS ──────────────────────────────────────────────────────────────
 function openMcpModal() {
   renderMcpList();
-  $('mcp-modal-overlay').classList.remove('hidden');
+  $('mcp-popup').classList.add('open');
   $('mcp-modal-error').textContent = '';
   $('mcp-name-input').value = '';
   $('mcp-url-input').value = '';
   $('mcp-token-input').value = '';
 }
 
+function toggleMcpPopup() {
+  if ($('mcp-popup').classList.contains('open')) {
+    closeMcpModal();
+  } else {
+    openMcpModal();
+  }
+}
+
 function closeMcpModal() {
-  $('mcp-modal-overlay').classList.add('hidden');
+  $('mcp-popup').classList.remove('open');
   updateMcpBadge();
   updateSidebarMcp();
 }
@@ -2525,22 +2591,35 @@ function renderMcpList() {
     list.innerHTML = `<div class="mcp-empty">No servers added yet.<br>Add an MCP server URL below to enable RAG and external tools for your personas.</div>`;
     return;
   }
-  list.innerHTML = state.mcpServers.map((s, i) => `
+  list.innerHTML = state.mcpServers.map((s, i) => {
+    const status = s._status || 'untested';
+    const statusLabel = { untested: 'Not tested', testing: 'Testing…', ok: 'Connected', fail: 'Failed' }[status] || 'Not tested';
+    return `
     <div class="mcp-server-item ${s.enabled ? '' : 'disabled'}" data-idx="${i}">
-      <div class="mcp-server-info">
-        <div class="mcp-server-name">${escapeHtml(s.name)}</div>
-        <div class="mcp-server-url" title="${escapeHtml(s.url)}">${escapeHtml(s.url)}</div>
+      <div class="mcp-server-item-top">
+        <div class="mcp-server-info">
+          <div class="mcp-server-name">${escapeHtml(s.name)}</div>
+          <div class="mcp-server-url" title="${escapeHtml(s.url)}">${escapeHtml(s.url)}</div>
+        </div>
+        <button class="mcp-test-btn" data-idx="${i}" ${status === 'testing' ? 'disabled' : ''}>Test</button>
+        <button class="mcp-toggle ${s.enabled ? 'on' : ''}" data-idx="${i}" title="${s.enabled ? 'Disable' : 'Enable'}"></button>
+        <button class="mcp-delete" data-idx="${i}" title="Remove server">✕</button>
       </div>
-      <button class="mcp-toggle ${s.enabled ? 'on' : ''}" data-idx="${i}" title="${s.enabled ? 'Disable' : 'Enable'}"></button>
-      <button class="mcp-delete" data-idx="${i}" title="Remove server">✕</button>
-    </div>
-  `).join('');
+      <div class="mcp-server-status">
+        <div class="mcp-status-dot ${status}"></div>
+        <span>${statusLabel}</span>
+      </div>
+    </div>`;
+  }).join('');
 
   list.querySelectorAll('.mcp-toggle').forEach(btn => {
     btn.onclick = () => toggleMcpServer(parseInt(btn.dataset.idx));
   });
   list.querySelectorAll('.mcp-delete').forEach(btn => {
     btn.onclick = () => removeMcpServer(parseInt(btn.dataset.idx));
+  });
+  list.querySelectorAll('.mcp-test-btn').forEach(btn => {
+    btn.onclick = () => testMcpServer(parseInt(btn.dataset.idx));
   });
 }
 
@@ -2575,6 +2654,21 @@ function removeMcpServer(idx) {
 function toggleMcpServer(idx) {
   state.mcpServers[idx].enabled = !state.mcpServers[idx].enabled;
   saveMcpServers();
+  renderMcpList();
+}
+
+async function testMcpServer(idx) {
+  const s = state.mcpServers[idx];
+  s._status = 'testing';
+  renderMcpList();
+  try {
+    const headers = { 'Accept': 'application/json, text/event-stream' };
+    if (s.token) headers['Authorization'] = `Bearer ${s.token}`;
+    const res = await fetch(s.url, { method: 'GET', headers, signal: AbortSignal.timeout(6000) });
+    s._status = res.ok ? 'ok' : 'fail';
+  } catch (_) {
+    s._status = 'fail';
+  }
   renderMcpList();
 }
 
