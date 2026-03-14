@@ -5,7 +5,7 @@
 
 **Organization**: Tasks grouped by user story for independent implementation and testing.
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `[ID] [P] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (US1–US4)
