@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripOptimizer AI – AI Travel Itinerary Builder</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#030213',
+            'primary-fg': '#ffffff',
+            card: '#ffffff',
+            border: 'rgba(0,0,0,0.1)',
+            muted: '#ececf0',
+            'muted-fg': '#717182',
+            accent: '#e9ebef',
+            input: '#f3f3f5',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #ffffff; }
+    .step-bar { height: 8px; border-radius: 9999px; transition: background 0.3s; }
+    .card-hover:hover { box-shadow: 0 10px 40px rgba(0,0,0,0.12); transform: translateY(-2px); transition: all 0.2s; }
+    .btn-primary { background: #030213; color: #fff; padding: 14px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s; }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-secondary { background: #ececf0; color: #030213; padding: 14px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .btn-secondary:hover { background: #e9ebef; }
+    .option-btn { padding: 14px 16px; border-radius: 10px; border: 2px solid rgba(0,0,0,0.1); background: white; text-align: left; cursor: pointer; font-size: 15px; transition: border-color 0.2s, background 0.2s; }
+    .option-btn:hover { border-color: rgba(3,2,19,0.4); }
+    .option-btn.selected { border-color: #030213; background: rgba(3,2,19,0.06); }
+    input[type=text], input[type=number], input[type=date] {
+      width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.12);
+      background: #f3f3f5; font-size: 15px; outline: none; transition: box-shadow 0.2s;
+    }
+    input:focus { box-shadow: 0 0 0 3px rgba(3,2,19,0.15); }
+    .badge-best { background: #030213; color: white; padding: 4px 12px; border-radius: 9999px; font-size: 13px; font-weight: 500; display: inline-block; margin-bottom: 12px; }
+    .gradient-header { background: linear-gradient(135deg, #030213 0%, #1a1a3e 100%); color: white; border-radius: 18px; padding: 36px; margin-bottom: 32px; }
+    .day-circle { background: #030213; color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
+    .activity-row { display: flex; align-items: center; gap: 12px; }
+    .activity-pill { display: flex; align-items: center; gap: 10px; flex: 1; background: rgba(236,236,240,0.5); border-radius: 10px; padding: 12px 14px; }
+    .star-fill { color: #facc15; fill: #facc15; }
+    .save-tag { color: #16a34a; font-size: 14px; font-weight: 500; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+/* ── SVG Icons ─────────────────────────────────────────── */
+const Icon = {
+  Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>,
+  MapPin: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>,
+  Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>,
+  Users: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+  ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
+  Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="star-fill"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  Plane: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2a.5.5 0 0 0-.3.8L4 10l-1 2.5L1 14l4 4 1.5-2 2.5-1 3.5 2.5.8-.2"/></svg>,
+  Hotel: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="m9 22 .01-4"/><path d="m15 22 .01-4"/><path d="M9 7h1"/><path d="M9 11h1"/><path d="M9 15h1"/><path d="M15 7h1"/><path d="M15 11h1"/><path d="M15 15h1"/></svg>,
+  Car: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17H5v-3.5l2-5h10l2 5V17z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>,
+  Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
+  Dollar: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  Coffee: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#030213" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></svg>,
+  Camera: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#030213" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
+  Utensils: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#030213" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
+};
+
+/* ── SearchForm ─────────────────────────────────────────── */
+function SearchForm({ onSearch }) {
+  const [destination, setDestination] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [travelers, setTravelers] = useState(2);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (destination && startDate && endDate) onSearch({ destination, startDate, endDate, travelers });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 text-gray-900">Find Your Perfect Trip</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
+            <Icon.MapPin /> Destination
+          </label>
+          <input type="text" value={destination} onChange={e => setDestination(e.target.value)}
+            placeholder="Where do you want to go?" required />
+        </div>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
+            <Icon.Users /> Travelers
+          </label>
+          <input type="number" value={travelers} onChange={e => setTravelers(Number(e.target.value))} min="1" max="20" required />
+        </div>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
+            <Icon.Calendar /> Start Date
+          </label>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
+        </div>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
+            <Icon.Calendar /> End Date
+          </label>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
+        </div>
+      </div>
+      <button type="submit" className="btn-primary">
+        <Icon.Search /> Search Deals
+      </button>
+    </form>
+  );
+}
+
+/* ── PriceComparison ────────────────────────────────────── */
+function PriceComparison({ packages, onSelectPackage }) {
+  return (
+    <div className="w-full max-w-6xl">
+      <h2 className="text-2xl font-semibold mb-2 text-gray-900">Compare Prices from Top Providers</h2>
+      <p className="text-gray-500 mb-8">Pick the package that fits your style and budget</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {packages.map(pkg => (
+          <div key={pkg.id} className={`card-hover bg-white rounded-2xl border-2 p-6 flex flex-col ${pkg.bestDeal ? 'border-gray-900' : 'border-gray-100'}`}>
+            {pkg.bestDeal && <span className="badge-best">✦ Best Deal</span>}
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">{pkg.provider}</h3>
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <Icon.Star /> {pkg.rating}
+                <span className="text-gray-400 ml-1">({pkg.reviews.toLocaleString()})</span>
+              </div>
+            </div>
+            <div className="mb-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-gray-900">${pkg.totalPrice.toLocaleString()}</span>
+                <span className="text-gray-400 text-sm">total</span>
+              </div>
+              {pkg.savings && <p className="save-tag mt-1">You save ${pkg.savings}</p>}
+            </div>
+            <div className="space-y-2 mb-4 text-sm text-gray-600">
+              <div className="flex justify-between"><span className="flex items-center gap-2"><Icon.Plane /> Flight</span><span className="font-medium">${pkg.flightPrice.toLocaleString()}</span></div>
+              <div className="flex justify-between"><span className="flex items-center gap-2"><Icon.Hotel /> Hotel</span><span className="font-medium">${pkg.hotelPrice.toLocaleString()}</span></div>
+              {pkg.carRentalPrice && <div className="flex justify-between"><span className="flex items-center gap-2"><Icon.Car /> Car Rental</span><span className="font-medium">${pkg.carRentalPrice.toLocaleString()}</span></div>}
+            </div>
+            <ul className="space-y-2 mb-6 flex-1">
+              {pkg.features.map((f, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <span className="mt-0.5 flex-shrink-0"><Icon.Check /></span> {f}
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => onSelectPackage(pkg)}
+              className={`w-full py-3 rounded-xl font-medium transition-all ${pkg.bestDeal ? 'btn-primary' : 'btn-secondary'}`}>
+              Select Package
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── TripQuestionnaire ──────────────────────────────────── */
+const questions = [
+  { id: 'accommodation', question: 'What type of accommodation do you prefer?', options: ['Luxury Hotel','Boutique Hotel','Budget Hotel','Vacation Rental','Hostel'] },
+  { id: 'activities', question: 'What activities interest you? (Select all that apply)', options: ['Sightseeing','Adventure Sports','Beach & Relaxation','Museums & Culture','Shopping','Nightlife','Food Tours','Nature & Hiking'], multiple: true },
+  { id: 'pace', question: 'What pace do you prefer for your trip?', options: ['Relaxed – lots of downtime','Moderate – balanced schedule','Packed – maximize experiences'] },
+  { id: 'budget', question: "What's your budget per person per day (excluding flights)?", options: ['Under $100','$100–$200','$200–$400','$400+'] },
+  { id: 'dining', question: "What's your dining preference?", options: ['Street Food & Local Eats','Mix of Casual & Fine Dining','Fine Dining & Upscale','Self-Catering'] },
+];
+
+function TripQuestionnaire({ onComplete }) {
+  const [current, setCurrent] = useState(0);
+  const [prefs, setPrefs] = useState({ activities: [] });
+  const q = questions[current];
+
+  const handleSelect = (opt) => {
+    if (q.multiple) {
+      const arr = prefs.activities || [];
+      setPrefs({ ...prefs, activities: arr.includes(opt) ? arr.filter(a => a !== opt) : [...arr, opt] });
+    } else {
+      setPrefs({ ...prefs, [q.id]: opt });
+    }
+  };
+
+  const canProceed = q.multiple ? (prefs.activities?.length > 0) : !!prefs[q.id];
+
+  const handleNext = () => {
+    if (current < questions.length - 1) setCurrent(current + 1);
+    else onComplete(prefs);
+  };
+
+  return (
+    <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+      <div className="mb-6">
+        <div className="flex gap-1.5 mb-3">
+          {questions.map((_, i) => (
+            <div key={i} className="step-bar flex-1" style={{ background: i <= current ? '#030213' : '#ececf0' }} />
+          ))}
+        </div>
+        <p className="text-sm text-gray-400">Question {current + 1} of {questions.length}</p>
+      </div>
+      <h2 className="text-xl font-semibold mb-6 text-gray-900">{q.question}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+        {q.options.map(opt => {
+          const sel = q.multiple ? prefs.activities?.includes(opt) : prefs[q.id] === opt;
+          return (
+            <button key={opt} onClick={() => handleSelect(opt)}
+              className={`option-btn ${sel ? 'selected' : ''}`}>
+              {sel && <span className="mr-2">✓</span>}{opt}
+            </button>
+          );
+        })}
+      </div>
+      <button onClick={handleNext} disabled={!canProceed} className="btn-primary">
+        {current < questions.length - 1 ? 'Next Question' : '✦ Generate My Itinerary'} <Icon.ChevronRight />
+      </button>
+    </div>
+  );
+}
+
+/* ── ItineraryDisplay ───────────────────────────────────── */
+function ItineraryDisplay({ searchData, selectedPackage, preferences, onStartOver }) {
+  const days = Math.max(1, Math.ceil(
+    (new Date(searchData.endDate) - new Date(searchData.startDate)) / 86400000
+  ));
+  const pricePerPerson = (selectedPackage.totalPrice / searchData.travelers).toFixed(0);
+  const dailyBudget = (selectedPackage.totalPrice / searchData.travelers / days).toFixed(0);
+
+  const schedule = [
+    { time: '8:00 AM',  icon: <Icon.Coffee />,   label: 'Breakfast at hotel' },
+    { time: '9:30 AM',  icon: <Icon.Camera />,   label: preferences.activities?.[0] || 'Morning city tour' },
+    { time: '12:30 PM', icon: <Icon.Utensils />, label: 'Lunch at local restaurant' },
+    { time: '2:00 PM',  icon: <Icon.Camera />,   label: preferences.activities?.[1] || 'Afternoon excursion' },
+    { time: '7:00 PM',  icon: <Icon.Utensils />, label: `Dinner – ${preferences.dining || 'restaurant of your choice'}` },
+    { time: '9:00 PM',  icon: <Icon.Camera />,   label: preferences.activities?.[2] || 'Evening stroll' },
+  ];
+
+  const fmt = (dateStr, offset = 0) => {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + offset);
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  };
+
+  return (
+    <div className="w-full max-w-5xl">
+      {/* Hero */}
+      <div className="gradient-header">
+        <h1 className="text-3xl font-semibold mb-2">Your Personalized Itinerary</h1>
+        <p className="opacity-80 text-lg">{searchData.destination} &nbsp;·&nbsp; {days} days &nbsp;·&nbsp; {searchData.travelers} traveler{searchData.travelers > 1 ? 's' : ''}</p>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h3 className="flex items-center gap-2 text-base font-semibold mb-4"><Icon.Dollar /> Bundle Price</h3>
+          <div className="text-4xl font-bold text-gray-900 mb-1">${selectedPackage.totalPrice.toLocaleString()}</div>
+          <p className="text-gray-500 text-sm">${pricePerPerson} per person</p>
+          <div className="mt-4 pt-4 border-t border-gray-100 space-y-1">
+            <p className="text-sm text-gray-400">Daily budget: ${dailyBudget}</p>
+            {selectedPackage.savings > 0 && <p className="save-tag text-sm">Saved ${selectedPackage.savings} vs booking separately</p>}
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h3 className="flex items-center gap-2 text-base font-semibold mb-4"><Icon.MapPin /> Package Details</h3>
+          <div className="space-y-3 text-sm">
+            <div><p className="text-gray-400">Provider</p><p className="font-medium">{selectedPackage.provider}</p></div>
+            <div><p className="text-gray-400">Accommodation</p><p className="font-medium">{preferences.accommodation}</p></div>
+            <div><p className="text-gray-400">Trip Pace</p><p className="font-medium">{preferences.pace}</p></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h3 className="flex items-center gap-2 text-base font-semibold mb-4"><Icon.Calendar /> Travel Dates</h3>
+          <div className="space-y-3 text-sm">
+            <div><p className="text-gray-400">Check-in</p><p className="font-medium">{fmt(searchData.startDate)}</p></div>
+            <div><p className="text-gray-400">Check-out</p><p className="font-medium">{fmt(searchData.endDate)}</p></div>
+            <div><p className="text-gray-400">Duration</p><p className="font-medium">{days} days, {days - 1} nights</p></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Daily itinerary */}
+      <h2 className="text-2xl font-semibold mb-5 text-gray-900">Daily Itinerary</h2>
+      <div className="space-y-5 mb-8">
+        {Array.from({ length: days }, (_, i) => (
+          <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="day-circle">{i + 1}</div>
+              <div>
+                <p className="font-semibold text-gray-900">Day {i + 1}</p>
+                <p className="text-sm text-gray-400">{fmt(searchData.startDate, i)}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {schedule.map((item, idx) => (
+                <div key={idx} className="activity-row">
+                  <div className="flex items-center gap-2 text-gray-400 w-24 text-xs flex-shrink-0">
+                    <Icon.Clock /> {item.time}
+                  </div>
+                  <div className="activity-pill">
+                    {item.icon}
+                    <span className="text-sm text-gray-800">{item.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Included features */}
+      <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-8">
+        <h3 className="text-base font-semibold mb-4 text-gray-900">What's Included</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {selectedPackage.features.map((f, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="w-2 h-2 bg-gray-900 rounded-full flex-shrink-0" /> {f}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTAs */}
+      <div className="flex gap-4">
+        <button onClick={onStartOver} className="btn-secondary flex-1">← New Search</button>
+        <button className="btn-primary flex-1" style={{ flex: 1 }}>Book This Trip ✈</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── App ────────────────────────────────────────────────── */
+function App() {
+  const [step, setStep] = useState('search');
+  const [searchData, setSearchData] = useState(null);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [preferences, setPreferences] = useState(null);
+
+  const generatePackages = (data) => {
+    const fp = 450;
+    const nights = Math.ceil((new Date(data.endDate) - new Date(data.startDate)) / 86400000);
+    const hp = 120 * nights;
+    const t = data.travelers;
+    return [
+      { id:'1', provider:'TravelBuddy', totalPrice:(fp+hp+200)*t, flightPrice:fp*t, hotelPrice:hp*t, carRentalPrice:200*t, rating:4.8, reviews:1243, features:['Free cancellation up to 48h','24/7 customer support','Airport transfers included','Complimentary breakfast'], savings:250, bestDeal:true },
+      { id:'2', provider:'SkyExplorer', totalPrice:(fp*1.15+hp*0.9+180)*t, flightPrice:fp*1.15*t, hotelPrice:hp*0.9*t, carRentalPrice:180*t, rating:4.6, reviews:892, features:['Flexible date changes','Travel insurance included','Priority check-in','Free WiFi'], savings:150 },
+      { id:'3', provider:'GlobalGetaways', totalPrice:(fp*1.2+hp*1.1)*t, flightPrice:fp*1.2*t, hotelPrice:hp*1.1*t, rating:4.5, reviews:2156, features:['Luxury hotel upgrades','Concierge service','Welcome gift','Late checkout'] },
+      { id:'4', provider:'WanderWise', totalPrice:(fp*0.95+hp*1.05+150)*t, flightPrice:fp*0.95*t, hotelPrice:hp*1.05*t, carRentalPrice:150*t, rating:4.7, reviews:1567, features:['Price match guarantee','Rewards points 2×','Travel guide included','$50 room service credit'], savings:180 },
+      { id:'5', provider:'VoyageVista', totalPrice:(fp*1.1+hp*0.85+220)*t, flightPrice:fp*1.1*t, hotelPrice:hp*0.85*t, carRentalPrice:220*t, rating:4.4, reviews:734, features:['Eco-friendly hotels','Carbon offset included','Local experience tours','Mobile app support'], savings:120 },
+      { id:'6', provider:'JetSetters', totalPrice:(fp*1.25+hp*1.15)*t, flightPrice:fp*1.25*t, hotelPrice:hp*1.15*t, rating:4.9, reviews:3421, features:['Premium economy flights','5-star hotels only','Private transfers','Spa access included'] },
+    ];
+  };
+
+  const reset = () => { setStep('search'); setSearchData(null); setSelectedPackage(null); setPreferences(null); };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center">
+              <Icon.Sparkles />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 leading-tight">TripOptimizer AI</p>
+              <p className="text-xs text-gray-400">Smart Travel Planning</p>
+            </div>
+          </div>
+          {step !== 'search' && (
+            <button onClick={reset} className="text-sm text-gray-400 hover:text-gray-800 transition-colors">
+              ← New Search
+            </button>
+          )}
+        </div>
+        {/* Progress indicator */}
+        <div className="max-w-6xl mx-auto px-6 pb-3 flex items-center gap-2 text-xs text-gray-400">
+          {['search','compare','questionnaire','itinerary'].map((s, i) => (
+            <React.Fragment key={s}>
+              <span className={step === s ? 'text-gray-900 font-medium' : ''}>
+                {['Search','Compare','Preferences','Itinerary'][i]}
+              </span>
+              {i < 3 && <span className="text-gray-200">›</span>}
+            </React.Fragment>
+          ))}
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="max-w-6xl mx-auto px-6 py-12 flex flex-col items-center">
+        {step === 'search' && (
+          <div className="w-full flex flex-col items-center">
+            <div className="text-center mb-10">
+              <h1 className="text-5xl font-semibold text-gray-900 mb-4 tracking-tight">Plan Your Perfect Trip</h1>
+              <p className="text-lg text-gray-500 max-w-xl">
+                Compare prices from 100+ travel agencies, personalise your preferences, and get a day-by-day itinerary instantly.
+              </p>
+            </div>
+            <SearchForm onSearch={d => { setSearchData(d); setStep('compare'); }} />
+          </div>
+        )}
+
+        {step === 'compare' && searchData && (
+          <PriceComparison packages={generatePackages(searchData)} onSelectPackage={p => { setSelectedPackage(p); setStep('questionnaire'); }} />
+        )}
+
+        {step === 'questionnaire' && (
+          <div className="w-full flex flex-col items-center">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-semibold text-gray-900 mb-3">Personalise Your Trip</h1>
+              <p className="text-gray-500">A few quick questions so we can tailor the perfect itinerary for you</p>
+            </div>
+            <TripQuestionnaire onComplete={p => { setPreferences(p); setStep('itinerary'); }} />
+          </div>
+        )}
+
+        {step === 'itinerary' && searchData && selectedPackage && preferences && (
+          <ItineraryDisplay searchData={searchData} selectedPackage={selectedPackage} preferences={preferences} onStartOver={reset} />
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-100 mt-20 py-8">
+        <div className="max-w-6xl mx-auto px-6 text-center text-sm text-gray-400">
+          © 2026 TripOptimizer AI · AI Travel Itinerary Builder MVP
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
