@@ -49,6 +49,20 @@
     .activity-row { display: flex; align-items: center; gap: 12px; }
     .activity-pill { display: flex; align-items: center; gap: 10px; flex: 1; background: rgba(236,236,240,0.5); border-radius: 10px; padding: 12px 14px; }
     .star-fill { color: #facc15; fill: #facc15; }
+    /* Yelp panel */
+    .yelp-red { color: #d32323; }
+    .yelp-border { border-color: #d32323; }
+    .yelp-bg { background: #d32323; }
+    .business-card { background: white; border-radius: 14px; border: 1px solid rgba(0,0,0,0.1); padding: 16px; transition: box-shadow 0.2s; }
+    .business-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
+    .reserve-btn { background: #d32323; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+    .reserve-btn:hover { opacity: 0.85; }
+    .reserve-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .chat-bubble-ai { background: #f3f3f5; border-radius: 12px 12px 12px 2px; padding: 12px 16px; max-width: 85%; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+    .chat-bubble-user { background: #030213; color: white; border-radius: 12px 12px 2px 12px; padding: 10px 14px; max-width: 75%; font-size: 14px; align-self: flex-end; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-box { background: white; border-radius: 20px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    .backend-banner { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 14px 18px; font-size: 14px; color: #92400e; margin-bottom: 20px; }
     .save-tag { color: #16a34a; font-size: 14px; font-weight: 500; }
   </style>
 </head>
@@ -334,11 +348,287 @@ function ItineraryDisplay({ searchData, selectedPackage, preferences, onStartOve
         </div>
       </div>
 
+      {/* Yelp Discovery + Reservations */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-8">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-9 h-9 yelp-bg rounded-xl flex items-center justify-center text-white font-bold text-lg">y</div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Discover & Reserve via Yelp</h3>
+            <p className="text-xs text-gray-400">Powered by Yelp Fusion AI — search restaurants, ask questions, make reservations</p>
+          </div>
+        </div>
+        <YelpPanel destination={searchData.destination} />
+      </div>
+
       {/* CTAs */}
       <div className="flex gap-4">
         <button onClick={onStartOver} className="btn-secondary flex-1">← New Search</button>
         <button className="btn-primary flex-1" style={{ flex: 1 }}>Book This Trip ✈</button>
       </div>
+    </div>
+  );
+}
+
+/* ── Yelp helpers ───────────────────────────────────────── */
+const PROXY = 'http://localhost:3001';
+
+async function yelpChat(query, chatId, lat, lng) {
+  const body = { query };
+  if (chatId) body.chat_id = chatId;
+  if (lat != null && lng != null) { body.latitude = lat; body.longitude = lng; }
+  const r = await fetch(`${PROXY}/api/yelp/chat`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error((await r.json()).error || r.statusText);
+  return r.json();
+}
+
+function parseBusinesses(data) {
+  for (const entity of (data.entities || [])) {
+    if (entity.businesses?.length) return entity.businesses;
+  }
+  return [];
+}
+
+function StarRating({ rating }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(i => (
+        <svg key={i} width="12" height="12" viewBox="0 0 24 24"
+          fill={i <= Math.round(rating) ? '#facc15' : 'none'}
+          stroke="#facc15" strokeWidth="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ))}
+      <span className="text-xs text-gray-500 ml-1">{rating} ({(data => data)(0)})</span>
+    </span>
+  );
+}
+
+function BusinessCard({ biz, onReserve }) {
+  const cats = (biz.categories || []).map(c => c.title).join(', ');
+  const addr = biz.location?.formatted_address?.replace(/\n/g, ', ') || '';
+  const photo = biz.contextual_info?.photos?.[0]?.original_url;
+  const hasReservations = biz.attributes?.RestaurantsReservations || biz.attributes?.OnlineReservations;
+
+  return (
+    <div className="business-card">
+      {photo && <img src={photo} alt={biz.name} className="w-full h-36 object-cover rounded-lg mb-3" />}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h4 className="font-semibold text-gray-900 text-base leading-tight">{biz.name}</h4>
+        {biz.price && <span className="text-xs text-gray-400 flex-shrink-0">{biz.price}</span>}
+      </div>
+      {cats && <p className="text-xs text-gray-400 mb-1">{cats}</p>}
+      <div className="flex items-center gap-1 mb-2">
+        {[1,2,3,4,5].map(i => (
+          <svg key={i} width="11" height="11" viewBox="0 0 24 24"
+            fill={i <= Math.round(biz.rating || 0) ? '#facc15' : 'none'}
+            stroke="#facc15" strokeWidth="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        ))}
+        <span className="text-xs text-gray-500 ml-1">{biz.rating} ({(biz.review_count || 0).toLocaleString()} reviews)</span>
+      </div>
+      {addr && <p className="text-xs text-gray-400 mb-3 leading-relaxed">{addr}</p>}
+      {biz.contextual_info?.review_snippet && (
+        <p className="text-xs text-gray-600 italic mb-3 line-clamp-2">
+          "{biz.contextual_info.review_snippet.replace(/\[\[HIGHLIGHT\]\]|\[\[ENDHIGHLIGHT\]\]/g, '')}"
+        </p>
+      )}
+      <div className="flex gap-2 items-center">
+        {biz.url && (
+          <a href={biz.url} target="_blank" rel="noopener noreferrer"
+            className="text-xs text-[#d32323] underline">View on Yelp</a>
+        )}
+        <button onClick={() => onReserve(biz)} className="reserve-btn ml-auto">
+          {hasReservations ? 'Reserve Table' : 'Check Availability'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReservationModal({ biz, destination, onClose, chatId, setChatId }) {
+  const [party, setParty] = useState(2);
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('19:00');
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState('');
+
+  const handleReserve = async () => {
+    const fmtDate = date ? new Date(date).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }) : 'tonight';
+    const fmtTime = time ? new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '7:00 PM';
+    const query = `Reserve a table for ${party} people at ${biz.name} on ${fmtDate} at ${fmtTime}`;
+    setLoading(true);
+    setResponse('');
+    try {
+      const data = await yelpChat(query, chatId,
+        biz.coordinates?.latitude, biz.coordinates?.longitude);
+      setChatId(data.chat_id);
+      setResponse(data.response?.text || 'No response received.');
+    } catch (e) {
+      setResponse(`Error: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{biz.name}</h3>
+            <p className="text-sm text-gray-400">Make a reservation via Yelp</p>
+          </div>
+          <button onClick={onClose} className="text-gray-300 hover:text-gray-600 text-2xl leading-none">×</button>
+        </div>
+
+        <div className="space-y-4 mb-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Party size</label>
+            <input type="number" min="1" max="20" value={party} onChange={e => setParty(+e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Date</label>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Time</label>
+            <input type="time" value={time} onChange={e => setTime(e.target.value)} />
+          </div>
+        </div>
+
+        {response && (
+          <div className="chat-bubble-ai mb-4 text-sm">{response}</div>
+        )}
+
+        <button onClick={handleReserve} disabled={loading} className="reserve-btn w-full py-3 text-base rounded-xl">
+          {loading ? 'Checking with Yelp…' : '🍽 Request Reservation'}
+        </button>
+        <p className="text-xs text-center text-gray-400 mt-3">
+          Reservations are processed by Yelp. Availability requires Yelp Reservations to be enabled on your API key.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function YelpPanel({ destination }) {
+  const [backendOk, setBackendOk] = useState(null); // null=checking, true/false
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [chatId, setChatId] = useState(null);
+  const [businesses, setBusinesses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [reservingBiz, setReservingBiz] = useState(null);
+  const messagesEndRef = React.useRef(null);
+
+  // Check backend health on mount
+  React.useEffect(() => {
+    fetch(`${PROXY}/api/health`)
+      .then(r => r.json())
+      .then(d => setBackendOk(d.ok))
+      .catch(() => setBackendOk(false));
+  }, []);
+
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Auto-search on first load once backend confirmed
+  React.useEffect(() => {
+    if (backendOk && messages.length === 0 && destination) {
+      sendQuery(`Find the best restaurants in ${destination}`);
+    }
+  }, [backendOk]);
+
+  const sendQuery = async (q) => {
+    const query = q || input.trim();
+    if (!query) return;
+    setInput('');
+    setMessages(m => [...m, { role: 'user', text: query }]);
+    setLoading(true);
+    try {
+      const data = await yelpChat(query, chatId);
+      const text = data.response?.text || '';
+      const bizList = parseBusinesses(data);
+      setChatId(data.chat_id);
+      setMessages(m => [...m, { role: 'ai', text }]);
+      if (bizList.length) setBusinesses(bizList);
+    } catch (e) {
+      setMessages(m => [...m, { role: 'ai', text: `⚠ ${e.message}` }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (backendOk === null) {
+    return <div className="text-sm text-gray-400 py-4 text-center">Connecting to Yelp backend…</div>;
+  }
+
+  if (!backendOk) {
+    return (
+      <div className="backend-banner">
+        <p className="font-semibold mb-1">🔌 Yelp backend not running</p>
+        <p className="mb-2">Start the local proxy to enable restaurant discovery and reservations:</p>
+        <code className="block bg-orange-50 border border-orange-200 rounded px-3 py-2 text-xs font-mono">
+          cd ai-travel-agent &amp;&amp; cp .env.example .env &amp;&amp; npm install &amp;&amp; npm start
+        </code>
+        <p className="mt-2 text-xs">Then add your <strong>YELP_API_KEY</strong> to <code>.env</code> and refresh.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Business grid */}
+      {businesses.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {businesses.map((biz, i) => (
+            <BusinessCard key={biz.id || i} biz={biz} onReserve={setReservingBiz} />
+          ))}
+        </div>
+      )}
+
+      {/* Chat thread */}
+      {messages.length > 0 && (
+        <div className="flex flex-col gap-3 mb-4 max-h-64 overflow-y-auto pr-1">
+          {messages.map((m, i) => (
+            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'}>
+                {m.text}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="chat-bubble-ai text-gray-400">Yelp is thinking…</div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      {/* Input */}
+      <form onSubmit={e => { e.preventDefault(); sendQuery(); }} className="flex gap-2">
+        <input type="text" value={input} onChange={e => setInput(e.target.value)}
+          placeholder={`Ask Yelp anything — "best sushi near ${destination}", "romantic dinner spot", "book a table for 2"…`}
+          className="flex-1 text-sm" disabled={loading} />
+        <button type="submit" disabled={loading || !input.trim()} className="reserve-btn px-5 flex-shrink-0">
+          {loading ? '…' : 'Ask'}
+        </button>
+      </form>
+
+      {reservingBiz && (
+        <ReservationModal
+          biz={reservingBiz}
+          destination={destination}
+          chatId={chatId}
+          setChatId={setChatId}
+          onClose={() => setReservingBiz(null)}
+        />
+      )}
     </div>
   );
 }
