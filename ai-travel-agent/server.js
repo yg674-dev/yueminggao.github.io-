@@ -12,6 +12,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { buildPackages } = require('./scrapers/index');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,25 @@ app.get('/api/health', (req, res) => {
     ok: true,
     yelp_configured: !!YELP_API_KEY,
   });
+});
+
+/* ── Travel packages (Booking.com hotels + Kayak flights) ─ */
+app.post('/api/packages', async (req, res) => {
+  const { destination, origin, startDate, endDate, travelers } = req.body;
+  if (!destination || !startDate || !endDate) {
+    return res.status(400).json({ error: 'destination, startDate, endDate required' });
+  }
+  try {
+    console.log(`[/api/packages] ${origin || 'LAX'} → ${destination} | ${startDate}–${endDate} | ${travelers} travelers`);
+    const packages = await buildPackages({ destination, origin: origin || 'Los Angeles', startDate, endDate, travelers: travelers || 2 });
+    if (!packages) {
+      return res.json({ packages: null, fallback: true, message: 'Scrapers returned no data — using mock packages.' });
+    }
+    res.json({ packages, fallback: false });
+  } catch (err) {
+    console.error('[/api/packages]', err.message);
+    res.status(500).json({ error: err.message, fallback: true });
+  }
 });
 
 /* ── Yelp Fusion AI chat proxy ──────────────────────────── */
