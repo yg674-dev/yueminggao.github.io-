@@ -558,7 +558,6 @@ function BusinessCard({ biz }) {
 /* ── OpenTable Panel ────────────────────────────────────── */
 function OpenTablePanel({ destination, travelers, startDate }) {
   const [authStatus, setAuthStatus] = useState(null); // null=checking, {loggedIn}
-  const [loginUrl, setLoginUrl] = useState('');
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [cuisine, setCuisine] = useState('');
@@ -591,13 +590,6 @@ function OpenTablePanel({ destination, travelers, startDate }) {
   React.useEffect(() => {
     if (authStatus) search();
   }, [authStatus]);
-
-  const fetchLoginUrl = async () => {
-    try {
-      const d = await api('GET', '/login-url');
-      setLoginUrl(d.url || d.loginUrl || d.message || '');
-    } catch (e) { setError(e.message); }
-  };
 
   const search = async () => {
     setLoading(true); setError(''); setRestaurants([]); setAvRestaurant(null); setAvailability(null);
@@ -641,19 +633,15 @@ function OpenTablePanel({ destination, travelers, startDate }) {
   if (!authStatus.loggedIn) return (
     <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
       <p className="font-semibold text-gray-900 mb-1">Sign in to OpenTable</p>
-      <p className="text-sm text-gray-500 mb-4">Log in once to enable real reservation booking. Your session is stored securely on your local machine.</p>
-      {!loginUrl ? (
-        <button onClick={fetchLoginUrl} className="ot-btn px-5 py-2.5">Get Login Link</button>
-      ) : (
-        <div className="space-y-3">
-          <a href={loginUrl} target="_blank" rel="noopener noreferrer">
+      <p className="text-sm text-gray-500 mb-4">Log in once to enable real-time availability. Your session is stored securely on your local machine.</p>
+      <div className="space-y-3">
+          <a href="https://www.opentable.com/login" target="_blank" rel="noopener noreferrer" style={{textDecoration:'none'}}>
             <button className="ot-btn w-full py-2.5">Open OpenTable Login ↗</button>
           </a>
-          <p className="text-xs text-gray-400">After logging in, refresh this panel.</p>
+          <p className="text-xs text-gray-400">After logging in, click below to refresh.</p>
           <button onClick={() => api('GET','/status').then(setAuthStatus).catch(()=>{})}
             className="ot-btn-outline w-full py-2 text-sm">I've logged in — refresh status</button>
         </div>
-      )}
     </div>
   );
 
