@@ -513,7 +513,7 @@ function StarRating({ rating }) {
   );
 }
 
-function BusinessCard({ biz, onReserve }) {
+function BusinessCard({ biz }) {
   const cats = (biz.categories || []).map(c => c.title).join(', ');
   const addr = biz.location?.formatted_address?.replace(/\n/g, ', ') || '';
   const photo = biz.contextual_info?.photos?.[0]?.original_url;
@@ -543,84 +543,17 @@ function BusinessCard({ biz, onReserve }) {
           "{biz.contextual_info.review_snippet.replace(/\[\[HIGHLIGHT\]\]|\[\[ENDHIGHLIGHT\]\]/g, '')}"
         </p>
       )}
-      <div className="flex gap-2 items-center">
-        {biz.url && (
-          <a href={biz.url} target="_blank" rel="noopener noreferrer"
-            className="text-xs text-[#d32323] underline">View on Yelp</a>
-        )}
-        <button onClick={() => onReserve(biz)} className="reserve-btn ml-auto">
-          {hasReservations ? 'Reserve Table' : 'Check Availability'}
-        </button>
-      </div>
+      {biz.url && (
+        <div className="flex gap-2 items-center">
+          <a href={biz.url} target="_blank" rel="noopener noreferrer" className="reserve-btn ml-auto" style={{textDecoration:'none'}}>
+            {hasReservations ? 'Reserve on Yelp' : 'View on Yelp'}
+          </a>
+        </div>
+      )}
     </div>
   );
 }
 
-function ReservationModal({ biz, destination, onClose, chatId, setChatId }) {
-  const [party, setParty] = useState(2);
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('19:00');
-  const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState('');
-
-  const handleReserve = async () => {
-    const fmtDate = date ? new Date(date).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }) : 'tonight';
-    const fmtTime = time ? new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' }) : '7:00 PM';
-    const query = `Reserve a table for ${party} people at ${biz.name} on ${fmtDate} at ${fmtTime}`;
-    setLoading(true);
-    setResponse('');
-    try {
-      const data = await yelpChat(query, chatId,
-        biz.coordinates?.latitude, biz.coordinates?.longitude);
-      setChatId(data.chat_id);
-      setResponse(data.response?.text || 'No response received.');
-    } catch (e) {
-      setResponse(`Error: ${e.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">{biz.name}</h3>
-            <p className="text-sm text-gray-400">Make a reservation via Yelp</p>
-          </div>
-          <button onClick={onClose} className="text-gray-300 hover:text-gray-600 text-2xl leading-none">×</button>
-        </div>
-
-        <div className="space-y-4 mb-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Party size</label>
-            <input type="number" min="1" max="20" value={party} onChange={e => setParty(+e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Time</label>
-            <input type="time" value={time} onChange={e => setTime(e.target.value)} />
-          </div>
-        </div>
-
-        {response && (
-          <div className="chat-bubble-ai mb-4 text-sm">{response}</div>
-        )}
-
-        <button onClick={handleReserve} disabled={loading} className="reserve-btn w-full py-3 text-base rounded-xl">
-          {loading ? 'Checking with Yelp…' : '🍽 Request Reservation'}
-        </button>
-        <p className="text-xs text-center text-gray-400 mt-3">
-          Reservations are processed by Yelp. Availability requires Yelp Reservations to be enabled on your API key.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 /* ── OpenTable Panel ────────────────────────────────────── */
 function OpenTablePanel({ destination, travelers, startDate }) {
@@ -637,12 +570,6 @@ function OpenTablePanel({ destination, travelers, startDate }) {
   const [avRestaurant, setAvRestaurant] = useState(null);
   const [availability, setAvailability] = useState(null);
   const [avLoading, setAvLoading] = useState(false);
-  // Reservation modal
-  const [reserving, setReserving] = useState(null); // {restaurant, slot}
-  const [specialRequests, setSpecialRequests] = useState('');
-  const [reserveStep, setReserveStep] = useState('idle'); // idle|preview|confirm|done
-  const [reserveResult, setReserveResult] = useState(null);
-
   const api = async (method, path, body) => {
     const r = await fetch(`${PROXY}/api/opentable${path}`, {
       method, headers: { 'Content-Type': 'application/json' },
@@ -689,34 +616,6 @@ function OpenTablePanel({ destination, travelers, startDate }) {
       setAvailability(d);
     } catch (e) { setError(e.message); }
     finally { setAvLoading(false); }
-  };
-
-  const startReserve = (restaurant, slot) => {
-    setReserving({ restaurant, slot }); setReserveStep('preview');
-    setSpecialRequests(''); setReserveResult(null);
-  };
-
-  const previewReservation = async () => {
-    setReserveStep('confirm');
-    try {
-      const d = await api('POST', '/reserve', {
-        restaurantId: reserving.restaurant.id || reserving.restaurant.url,
-        date, time: reserving.slot?.time || time, partySize: party,
-        specialRequests: specialRequests || undefined, confirm: false,
-      });
-      setReserveResult(d);
-    } catch (e) { setError(e.message); setReserveStep('preview'); }
-  };
-
-  const confirmReservation = async () => {
-    try {
-      const d = await api('POST', '/reserve', {
-        restaurantId: reserving.restaurant.id || reserving.restaurant.url,
-        date, time: reserving.slot?.time || time, partySize: party,
-        specialRequests: specialRequests || undefined, confirm: true,
-      });
-      setReserveResult(d); setReserveStep('done');
-    } catch (e) { setError(e.message); }
   };
 
   const RatingStars = ({ rating }) => rating > 0 ? (
@@ -824,15 +723,21 @@ function OpenTablePanel({ destination, travelers, startDate }) {
                 </p>
                 {slots.length > 0 ? (
                   <>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Available times — click to book:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Available times — click to book on OpenTable:</p>
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {slots.map((slot, i) => (
-                        <button key={i} onClick={() => startReserve(avRestaurant, slot)} className="slot-btn">
-                          {slot.time || slot}
-                        </button>
-                      ))}
+                      {slots.map((slot, i) => {
+                        const slotTime = slot.time || slot;
+                        const bookUrl = avRestaurant?.url
+                          ? `${avRestaurant.url}?covers=${party}${date ? `&dateTime=${date}T${slotTime.replace(/\s/g,'')}` : ''}`
+                          : avRestaurant?.url || 'https://www.opentable.com';
+                        return (
+                          <a key={i} href={bookUrl} target="_blank" rel="noopener noreferrer" className="slot-btn" style={{textDecoration:'none'}}>
+                            {slotTime}
+                          </a>
+                        );
+                      })}
                     </div>
-                    <p className="text-xs text-gray-400">Reservations are made directly through OpenTable via your logged-in session.</p>
+                    <p className="text-xs text-gray-400">Opens OpenTable to complete your reservation.</p>
                   </>
                 ) : (
                   <p className="text-sm text-gray-600">{availability.message || 'No available times found. Try different dates or times.'}</p>
@@ -843,68 +748,6 @@ function OpenTablePanel({ destination, travelers, startDate }) {
         </div>
       )}
 
-      {/* Reservation modal */}
-      {reserving && (
-        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setReserving(null)}>
-          <div className="modal-box">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-semibold text-gray-900">{reserving.restaurant?.name}</h3>
-                <p className="text-xs text-gray-400">
-                  {date} · {reserving.slot?.time || time} · Party of {party}
-                </p>
-              </div>
-              <button onClick={() => setReserving(null)} className="text-gray-300 hover:text-gray-600 text-2xl leading-none">×</button>
-            </div>
-
-            {reserveStep === 'preview' && (
-              <>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Special requests (optional)</label>
-                  <textarea value={specialRequests} onChange={e => setSpecialRequests(e.target.value)}
-                    placeholder="Window seat, anniversary, dietary requirements…"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" rows="2" />
-                </div>
-                <button onClick={previewReservation} className="ot-btn w-full py-3 text-base rounded-xl">
-                  Preview Reservation
-                </button>
-              </>
-            )}
-
-            {reserveStep === 'confirm' && (
-              <>
-                {reserveResult && (
-                  <div className="bg-gray-50 rounded-xl p-4 mb-4 text-sm space-y-1">
-                    <p><span className="text-gray-400">Restaurant:</span> {reserveResult.restaurantName || reserving.restaurant?.name}</p>
-                    <p><span className="text-gray-400">Date:</span> {reserveResult.date || date}</p>
-                    <p><span className="text-gray-400">Time:</span> {reserveResult.time || reserving.slot?.time}</p>
-                    <p><span className="text-gray-400">Party:</span> {reserveResult.partySize || party}</p>
-                    {specialRequests && <p><span className="text-gray-400">Requests:</span> {specialRequests}</p>}
-                  </div>
-                )}
-                <div className="flex gap-3">
-                  <button onClick={() => setReserveStep('preview')} className="btn-secondary flex-1 py-3 rounded-xl text-sm">Back</button>
-                  <button onClick={confirmReservation} className="ot-btn flex-1 py-3 rounded-xl text-base">
-                    Confirm Booking ✓
-                  </button>
-                </div>
-              </>
-            )}
-
-            {reserveStep === 'done' && (
-              <div className="text-center py-4">
-                <div className="text-4xl mb-3">🎉</div>
-                <p className="font-semibold text-gray-900 mb-1">Reservation Confirmed!</p>
-                <p className="text-sm text-gray-500 mb-4">{reserveResult?.message || 'Your table has been booked on OpenTable.'}</p>
-                {reserveResult?.confirmationNumber && (
-                  <p className="text-xs text-gray-400 mb-4">Confirmation: {reserveResult.confirmationNumber}</p>
-                )}
-                <button onClick={() => setReserving(null)} className="ot-btn px-6 py-2.5">Done</button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -916,7 +759,6 @@ function YelpPanel({ destination }) {
   const [chatId, setChatId] = useState(null);
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [reservingBiz, setReservingBiz] = useState(null);
   const messagesEndRef = React.useRef(null);
 
   // Check backend health on mount
@@ -981,7 +823,7 @@ function YelpPanel({ destination }) {
       {businesses.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {businesses.map((biz, i) => (
-            <BusinessCard key={biz.id || i} biz={biz} onReserve={setReservingBiz} />
+            <BusinessCard key={biz.id || i} biz={biz} />
           ))}
         </div>
       )}
@@ -1015,15 +857,6 @@ function YelpPanel({ destination }) {
         </button>
       </form>
 
-      {reservingBiz && (
-        <ReservationModal
-          biz={reservingBiz}
-          destination={destination}
-          chatId={chatId}
-          setChatId={setChatId}
-          onClose={() => setReservingBiz(null)}
-        />
-      )}
     </div>
   );
 }
