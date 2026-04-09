@@ -624,108 +624,174 @@ function ReservationModal({ biz, destination, onClose, chatId, setChatId }) {
 
 /* ── OpenTable Panel ────────────────────────────────────── */
 function OpenTablePanel({ destination, travelers, startDate }) {
+  const [authStatus, setAuthStatus] = useState(null); // null=checking, {loggedIn}
+  const [loginUrl, setLoginUrl] = useState('');
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState(null);       // restaurant for availability check
-  const [availability, setAvailability] = useState(null);
-  const [avLoading, setAvLoading] = useState(false);
+  const [cuisine, setCuisine] = useState('');
   const [date, setDate] = useState(startDate || '');
   const [time, setTime] = useState('19:00');
   const [party, setParty] = useState(travelers || 2);
   const [error, setError] = useState('');
+  // Availability
+  const [avRestaurant, setAvRestaurant] = useState(null);
+  const [availability, setAvailability] = useState(null);
+  const [avLoading, setAvLoading] = useState(false);
+  // Reservation modal
+  const [reserving, setReserving] = useState(null); // {restaurant, slot}
+  const [specialRequests, setSpecialRequests] = useState('');
+  const [reserveStep, setReserveStep] = useState('idle'); // idle|preview|confirm|done
+  const [reserveResult, setReserveResult] = useState(null);
 
-  const search = async (q) => {
-    const searchQuery = q || query || 'restaurants';
-    setLoading(true); setError(''); setRestaurants([]); setSelected(null); setAvailability(null);
+  const api = async (method, path, body) => {
+    const r = await fetch(`${PROXY}/api/opentable${path}`, {
+      method, headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const json = await r.json();
+    if (!r.ok) throw new Error(json.error || r.statusText);
+    return json;
+  };
+
+  // Check auth on mount
+  React.useEffect(() => {
+    api('GET', '/status')
+      .then(d => setAuthStatus(d))
+      .catch(() => setAuthStatus({ loggedIn: false, error: 'Could not reach server' }));
+  }, []);
+
+  // Auto-search once auth confirmed
+  React.useEffect(() => {
+    if (authStatus) search();
+  }, [authStatus]);
+
+  const fetchLoginUrl = async () => {
     try {
-      const res = await fetch(`${PROXY}/api/opentable/search`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchQuery, location: destination, date, time, partySize: party }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Search failed');
-      setRestaurants(json.results || []);
-      if (!json.results?.length) setError('No restaurants found. Try a different search.');
+      const d = await api('GET', '/login-url');
+      setLoginUrl(d.url || d.loginUrl || d.message || '');
+    } catch (e) { setError(e.message); }
+  };
+
+  const search = async () => {
+    setLoading(true); setError(''); setRestaurants([]); setAvRestaurant(null); setAvailability(null);
+    try {
+      const d = await api('POST', '/search', { location: destination, cuisine: cuisine || undefined, date: date || undefined, time, partySize: party });
+      setRestaurants(d.results || []);
+      if (!d.results?.length) setError('No restaurants found — try a different cuisine or dates.');
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
 
-  const checkAvailability = async (restaurant) => {
-    setSelected(restaurant); setAvailability(null); setAvLoading(true); setError('');
+  const checkAvailability = async (r) => {
+    setAvRestaurant(r); setAvailability(null); setAvLoading(true); setError('');
     try {
-      const res = await fetch(`${PROXY}/api/opentable/availability`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ restaurantUrl: restaurant.url, date, time, partySize: party }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Availability check failed');
-      setAvailability(json);
-    } catch (e) { setError(e.message); setAvailability(null); }
+      const d = await api('POST', '/availability', { restaurantId: r.id || r.url, date, time, partySize: party });
+      setAvailability(d);
+    } catch (e) { setError(e.message); }
     finally { setAvLoading(false); }
   };
 
-  // Auto-search on mount
-  React.useEffect(() => { search('restaurants'); }, []);
+  const startReserve = (restaurant, slot) => {
+    setReserving({ restaurant, slot }); setReserveStep('preview');
+    setSpecialRequests(''); setReserveResult(null);
+  };
+
+  const previewReservation = async () => {
+    setReserveStep('confirm');
+    try {
+      const d = await api('POST', '/reserve', {
+        restaurantId: reserving.restaurant.id || reserving.restaurant.url,
+        date, time: reserving.slot?.time || time, partySize: party,
+        specialRequests: specialRequests || undefined, confirm: false,
+      });
+      setReserveResult(d);
+    } catch (e) { setError(e.message); setReserveStep('preview'); }
+  };
+
+  const confirmReservation = async () => {
+    try {
+      const d = await api('POST', '/reserve', {
+        restaurantId: reserving.restaurant.id || reserving.restaurant.url,
+        date, time: reserving.slot?.time || time, partySize: party,
+        specialRequests: specialRequests || undefined, confirm: true,
+      });
+      setReserveResult(d); setReserveStep('done');
+    } catch (e) { setError(e.message); }
+  };
+
+  const RatingStars = ({ rating }) => rating > 0 ? (
+    <span className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(s => (
+        <svg key={s} width="10" height="10" viewBox="0 0 24 24"
+          fill={s <= Math.round(rating) ? '#facc15' : 'none'} stroke="#facc15" strokeWidth="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ))}
+      <span className="text-xs text-gray-500 ml-0.5">{rating}</span>
+    </span>
+  ) : null;
+
+  // ── Auth gate ──────────────────────────────────────────
+  if (!authStatus) return (
+    <div className="flex items-center gap-3 text-sm text-gray-400 py-4">
+      <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
+      Connecting to OpenTable…
+    </div>
+  );
+
+  if (!authStatus.loggedIn) return (
+    <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
+      <p className="font-semibold text-gray-900 mb-1">Sign in to OpenTable</p>
+      <p className="text-sm text-gray-500 mb-4">Log in once to enable real reservation booking. Your session is stored securely on your local machine.</p>
+      {!loginUrl ? (
+        <button onClick={fetchLoginUrl} className="ot-btn px-5 py-2.5">Get Login Link</button>
+      ) : (
+        <div className="space-y-3">
+          <a href={loginUrl} target="_blank" rel="noopener noreferrer">
+            <button className="ot-btn w-full py-2.5">Open OpenTable Login ↗</button>
+          </a>
+          <p className="text-xs text-gray-400">After logging in, refresh this panel.</p>
+          <button onClick={() => api('GET','/status').then(setAuthStatus).catch(()=>{})}
+            className="ot-btn-outline w-full py-2 text-sm">I've logged in — refresh status</button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div>
-      {/* Search bar */}
-      <form onSubmit={e => { e.preventDefault(); search(); }} className="flex gap-2 mb-4">
-        <input type="text" value={query} onChange={e => setQuery(e.target.value)}
-          placeholder={`Search restaurants in ${destination}…`}
-          className="flex-1 text-sm" />
-        <button type="submit" disabled={loading} className="ot-btn px-4 flex-shrink-0">
+      {/* Search controls */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <input type="text" value={cuisine} onChange={e => setCuisine(e.target.value)}
+          placeholder="Cuisine (optional)" className="text-sm" style={{width:'160px'}} />
+        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="text-sm py-2 px-2" style={{width:'145px'}} />
+        <input type="time" value={time} onChange={e => setTime(e.target.value)} className="text-sm py-2 px-2" style={{width:'110px'}} />
+        <input type="number" min="1" max="20" value={party} onChange={e => setParty(+e.target.value)}
+          className="text-sm py-2 px-2" style={{width:'70px'}} placeholder="Party" />
+        <button onClick={search} disabled={loading} className="ot-btn px-5">
           {loading ? '…' : 'Search'}
         </button>
-      </form>
-
-      {/* Date / time / party controls */}
-      <div className="flex flex-wrap gap-3 mb-5 text-sm">
-        <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-xs">Date</label>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="text-sm py-1.5 px-2" style={{width:'140px'}} />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-xs">Time</label>
-          <input type="time" value={time} onChange={e => setTime(e.target.value)} className="text-sm py-1.5 px-2" style={{width:'110px'}} />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-gray-400 text-xs">Party</label>
-          <input type="number" min="1" max="20" value={party} onChange={e => setParty(+e.target.value)} className="text-sm py-1.5 px-2" style={{width:'70px'}} />
-        </div>
       </div>
 
       {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
-      {/* Restaurant list */}
+      {/* Restaurant cards */}
       {restaurants.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {restaurants.map((r, i) => (
             <div key={i} className="business-card">
               {r.imageUrl && <img src={r.imageUrl} alt={r.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
               <p className="font-semibold text-gray-900 text-sm mb-0.5 leading-tight">{r.name}</p>
-              {r.cuisine && <p className="text-xs text-gray-400 mb-1">{r.cuisine}{r.neighborhood ? ` · ${r.neighborhood}` : ''}</p>}
+              {(r.cuisine || r.neighborhood) && <p className="text-xs text-gray-400 mb-1">{[r.cuisine,r.neighborhood].filter(Boolean).join(' · ')}</p>}
               <div className="flex items-center gap-2 mb-3">
-                {r.rating > 0 && (
-                  <span className="flex items-center gap-0.5 text-xs text-gray-600">
-                    {[1,2,3,4,5].map(s => (
-                      <svg key={s} width="10" height="10" viewBox="0 0 24 24"
-                        fill={s <= Math.round(r.rating) ? '#facc15' : 'none'}
-                        stroke="#facc15" strokeWidth="2">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                    ))}
-                    {r.rating}
-                  </span>
-                )}
+                <RatingStars rating={r.rating} />
                 {r.reviewCount > 0 && <span className="text-xs text-gray-400">({r.reviewCount.toLocaleString()})</span>}
                 {r.priceRange && <span className="text-xs text-gray-400 ml-auto">{r.priceRange}</span>}
               </div>
               <div className="flex gap-2">
-                <a href={r.url} target="_blank" rel="noopener noreferrer" className="ot-btn-outline text-xs flex-1 text-center">View</a>
+                {r.url && <a href={r.url} target="_blank" rel="noopener noreferrer" className="ot-btn-outline text-xs">View</a>}
                 <button onClick={() => checkAvailability(r)} className="ot-btn flex-1 text-xs">
-                  Check Availability
+                  Check Times
                 </button>
               </div>
             </div>
@@ -733,50 +799,110 @@ function OpenTablePanel({ destination, travelers, startDate }) {
         </div>
       )}
 
-      {/* Availability result */}
+      {loading && !restaurants.length && (
+        <div className="flex items-center gap-3 text-sm text-gray-400 py-4">
+          <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
+          Searching OpenTable for {destination}…
+        </div>
+      )}
+
+      {/* Availability panel */}
       {(avLoading || availability) && (
         <div className="bg-red-50 border border-red-100 rounded-2xl p-5 mb-4">
           {avLoading ? (
             <div className="flex items-center gap-3 text-sm text-gray-500">
               <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
-              Checking live availability on OpenTable…
+              Checking live availability…
             </div>
-          ) : availability && (
-            <>
-              <p className="font-semibold text-gray-900 mb-1">{availability.restaurantName}</p>
-              <p className="text-xs text-gray-400 mb-3">
-                {new Date(availability.date + 'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · Party of {availability.partySize}
-              </p>
-
-              {availability.timeSlots?.length > 0 ? (
-                <>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Available times:</p>
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {availability.timeSlots.map((slot, i) => (
-                      <a key={i} href={availability.bookingUrl} target="_blank" rel="noopener noreferrer">
-                        <button className="slot-btn">{slot.time}</button>
-                      </a>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400">Click a time to complete your reservation on OpenTable ↗</p>
-                </>
-              ) : (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3">{availability.message || 'No available times found for this selection.'}</p>
-                  <a href={availability.bookingUrl} target="_blank" rel="noopener noreferrer">
-                    <button className="ot-btn w-full py-2.5">Try Different Times on OpenTable ↗</button>
-                  </a>
-                </div>
-              )}
-            </>
-          )}
+          ) : availability && (() => {
+            const slots = availability.availableSlots || availability.timeSlots || [];
+            return (
+              <>
+                <p className="font-semibold text-gray-900 mb-0.5">{avRestaurant?.name}</p>
+                <p className="text-xs text-gray-400 mb-3">
+                  {date ? new Date(date+'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) : ''} · Party of {party}
+                </p>
+                {slots.length > 0 ? (
+                  <>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Available times — click to book:</p>
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {slots.map((slot, i) => (
+                        <button key={i} onClick={() => startReserve(avRestaurant, slot)} className="slot-btn">
+                          {slot.time || slot}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400">Reservations are made directly through OpenTable via your logged-in session.</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-600">{availability.message || 'No available times found. Try different dates or times.'}</p>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
 
-      {loading && restaurants.length === 0 && (
-        <div className="flex items-center gap-3 text-sm text-gray-400 py-4">
-          <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
-          Searching OpenTable…
+      {/* Reservation modal */}
+      {reserving && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setReserving(null)}>
+          <div className="modal-box">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">{reserving.restaurant?.name}</h3>
+                <p className="text-xs text-gray-400">
+                  {date} · {reserving.slot?.time || time} · Party of {party}
+                </p>
+              </div>
+              <button onClick={() => setReserving(null)} className="text-gray-300 hover:text-gray-600 text-2xl leading-none">×</button>
+            </div>
+
+            {reserveStep === 'preview' && (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Special requests (optional)</label>
+                  <textarea value={specialRequests} onChange={e => setSpecialRequests(e.target.value)}
+                    placeholder="Window seat, anniversary, dietary requirements…"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" rows="2" />
+                </div>
+                <button onClick={previewReservation} className="ot-btn w-full py-3 text-base rounded-xl">
+                  Preview Reservation
+                </button>
+              </>
+            )}
+
+            {reserveStep === 'confirm' && (
+              <>
+                {reserveResult && (
+                  <div className="bg-gray-50 rounded-xl p-4 mb-4 text-sm space-y-1">
+                    <p><span className="text-gray-400">Restaurant:</span> {reserveResult.restaurantName || reserving.restaurant?.name}</p>
+                    <p><span className="text-gray-400">Date:</span> {reserveResult.date || date}</p>
+                    <p><span className="text-gray-400">Time:</span> {reserveResult.time || reserving.slot?.time}</p>
+                    <p><span className="text-gray-400">Party:</span> {reserveResult.partySize || party}</p>
+                    {specialRequests && <p><span className="text-gray-400">Requests:</span> {specialRequests}</p>}
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button onClick={() => setReserveStep('preview')} className="btn-secondary flex-1 py-3 rounded-xl text-sm">Back</button>
+                  <button onClick={confirmReservation} className="ot-btn flex-1 py-3 rounded-xl text-base">
+                    Confirm Booking ✓
+                  </button>
+                </div>
+              </>
+            )}
+
+            {reserveStep === 'done' && (
+              <div className="text-center py-4">
+                <div className="text-4xl mb-3">🎉</div>
+                <p className="font-semibold text-gray-900 mb-1">Reservation Confirmed!</p>
+                <p className="text-sm text-gray-500 mb-4">{reserveResult?.message || 'Your table has been booked on OpenTable.'}</p>
+                {reserveResult?.confirmationNumber && (
+                  <p className="text-xs text-gray-400 mb-4">Confirmation: {reserveResult.confirmationNumber}</p>
+                )}
+                <button onClick={() => setReserving(null)} className="ot-btn px-6 py-2.5">Done</button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

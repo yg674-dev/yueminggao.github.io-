@@ -51,14 +51,32 @@ app.post('/api/packages', async (req, res) => {
   }
 });
 
-/* ── OpenTable MCP endpoints ────────────────────────────── */
+/* ── OpenTable MCP endpoints (@striderlabs/mcp-opentable) ── */
+
+// Auth status
+app.get('/api/opentable/status', async (req, res) => {
+  try { res.json(await opentable.getStatus()); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Get login URL
+app.get('/api/opentable/login-url', async (req, res) => {
+  try { res.json(await opentable.getLoginUrl()); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Logout
+app.post('/api/opentable/logout', async (req, res) => {
+  try { res.json(await opentable.logout()); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // Search restaurants
 app.post('/api/opentable/search', async (req, res) => {
-  const { query, location, date, time, partySize } = req.body;
-  if (!query || !location) return res.status(400).json({ error: 'query and location are required' });
+  const { location, cuisine, date, time, partySize } = req.body;
+  if (!location) return res.status(400).json({ error: 'location is required' });
   try {
-    const results = await opentable.searchRestaurants({ query, location, date, time, partySize });
+    const results = await opentable.searchRestaurants({ location, cuisine, date, time, partySize });
     res.json({ results });
   } catch (err) {
     console.error('[opentable/search]', err.message);
@@ -66,45 +84,51 @@ app.post('/api/opentable/search', async (req, res) => {
   }
 });
 
-// Check real-time availability
-app.post('/api/opentable/availability', async (req, res) => {
-  const { restaurantUrl, date, time, partySize } = req.body;
-  if (!restaurantUrl || !date || !time || !partySize) {
-    return res.status(400).json({ error: 'restaurantUrl, date, time, partySize required' });
-  }
-  try {
-    const result = await opentable.checkAvailability({ restaurantUrl, date, time, partySize });
-    res.json(result);
-  } catch (err) {
-    console.error('[opentable/availability]', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Restaurant details
 app.post('/api/opentable/details', async (req, res) => {
-  const { restaurantUrl } = req.body;
-  if (!restaurantUrl) return res.status(400).json({ error: 'restaurantUrl required' });
+  const { restaurantId } = req.body;
+  if (!restaurantId) return res.status(400).json({ error: 'restaurantId required' });
+  try { res.json(await opentable.getRestaurantDetails({ restaurantId })); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Check real-time availability
+app.post('/api/opentable/availability', async (req, res) => {
+  const { restaurantId, date, time, partySize } = req.body;
+  if (!restaurantId || !date || !time || !partySize) {
+    return res.status(400).json({ error: 'restaurantId, date, time, partySize required' });
+  }
+  try { res.json(await opentable.checkAvailability({ restaurantId, date, time, partySize })); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Make / preview reservation
+app.post('/api/opentable/reserve', async (req, res) => {
+  const { restaurantId, date, time, partySize, specialRequests, confirm } = req.body;
+  if (!restaurantId || !date || !time || !partySize) {
+    return res.status(400).json({ error: 'restaurantId, date, time, partySize required' });
+  }
   try {
-    const result = await opentable.getRestaurantDetails({ restaurantUrl });
+    const result = await opentable.makeReservation({ restaurantId, date, time, partySize, specialRequests, confirm: !!confirm });
     res.json(result);
   } catch (err) {
-    console.error('[opentable/details]', err.message);
+    console.error('[opentable/reserve]', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Reviews
-app.post('/api/opentable/reviews', async (req, res) => {
-  const { restaurantUrl, maxReviews, sortBy } = req.body;
-  if (!restaurantUrl) return res.status(400).json({ error: 'restaurantUrl required' });
-  try {
-    const result = await opentable.getRestaurantReviews({ restaurantUrl, maxReviews, sortBy });
-    res.json(result);
-  } catch (err) {
-    console.error('[opentable/reviews]', err.message);
-    res.status(500).json({ error: err.message });
-  }
+// Get upcoming reservations
+app.get('/api/opentable/reservations', async (req, res) => {
+  try { res.json(await opentable.getReservations()); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Cancel reservation
+app.post('/api/opentable/cancel', async (req, res) => {
+  const { reservationId } = req.body;
+  if (!reservationId) return res.status(400).json({ error: 'reservationId required' });
+  try { res.json(await opentable.cancelReservation({ reservationId })); }
+  catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // Graceful shutdown

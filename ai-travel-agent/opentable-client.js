@@ -1,13 +1,12 @@
 /**
- * OpenTable MCP client.
- * Spawns the opentable-mcp subprocess and communicates via MCP stdio protocol.
- * Exposes clean async functions that our Express server can call directly.
+ * OpenTable MCP client — @striderlabs/mcp-opentable
+ * https://mcpmarket.com/server/opentable
+ *
+ * Spawns the striderlabs MCP subprocess via npx and communicates over MCP stdio.
+ * Supports real reservation booking, session management, and cancellation.
  */
-const path = require('path');
 const { Client } = require('@modelcontextprotocol/sdk/client/index.js');
 const { StdioClientTransport } = require('@modelcontextprotocol/sdk/client/stdio.js');
-
-const MCP_PATH = path.join(__dirname, 'opentable-mcp', 'build', 'index.js');
 
 let client = null;
 let connecting = null;
@@ -17,27 +16,21 @@ async function getClient() {
   if (connecting) return connecting;
 
   connecting = (async () => {
-    console.log('[opentable] spawning MCP subprocess…');
+    console.log('[opentable] starting @striderlabs/mcp-opentable subprocess…');
     const transport = new StdioClientTransport({
-      command: 'node',
-      args: [MCP_PATH],
-      env: {
-        ...process.env,
-        OPENTABLE_BROWSER_CHANNEL: process.env.OPENTABLE_BROWSER_CHANNEL || '',
-        OPENTABLE_LOCALE: process.env.OPENTABLE_LOCALE || 'en-US',
-        OPENTABLE_TIMEZONE: process.env.OPENTABLE_TIMEZONE || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
+      command: 'npx',
+      args: ['-y', '@striderlabs/mcp-opentable'],
+      env: { ...process.env },
     });
 
     const c = new Client({ name: 'ai-travel-agent', version: '1.0.0' }, { capabilities: {} });
     await c.connect(transport);
-    console.log('[opentable] MCP subprocess connected');
+    console.log('[opentable] MCP connected ✓');
     client = c;
     connecting = null;
 
-    // Reconnect on unexpected disconnect
     transport.onclose = () => {
-      console.warn('[opentable] MCP subprocess disconnected — will reconnect on next call');
+      console.warn('[opentable] subprocess disconnected — will reconnect on next call');
       client = null;
       connecting = null;
     };
@@ -48,59 +41,80 @@ async function getClient() {
   return connecting;
 }
 
-async function callTool(name, args) {
+async function callTool(name, args = {}) {
   const c = await getClient();
   const result = await c.callTool({ name, arguments: args });
   const text = result.content?.[0]?.text;
   if (!text) throw new Error('Empty response from OpenTable MCP');
   if (result.isError) throw new Error(text);
-  return JSON.parse(text);
+  // Some responses are JSON, some are plain text
+  try { return JSON.parse(text); } catch { return { message: text }; }
 }
 
 /* ── Public API ─────────────────────────────────────────── */
 
+/** Check if user is logged in to OpenTable. */
+async function getStatus() {
+  return callTool('opentable_status');
+}
+
+/** Get OpenTable login URL so the user can authenticate. */
+async function getLoginUrl() {
+  return callTool('opentable_login');
+}
+
+/** Clear stored session cookies (logout). */
+async function logout() {
+  return callTool('opentable_logout');
+}
+
 /**
- * Search restaurants on OpenTable.
- * @param {string} query        - "Italian", "sushi", restaurant name, etc.
- * @param {string} location     - "Paris", "Tokyo", "New York"
- * @param {string} [date]       - YYYY-MM-DD
- * @param {string} [time]       - HH:MM (24h)
+ * Search for restaurants.
+ * @param {string} location   - "Paris", "New York", "Tokyo"
+ * @param {string} [cuisine]  - "Italian", "sushi", etc.
+ * @param {string} [date]     - YYYY-MM-DD
+ * @param {string} [time]     - HH:MM (24h)
  * @param {number} [partySize]
  */
-async function searchRestaurants({ query, location, date, time, partySize }) {
-  return callTool('search_restaurants', { query, location, date, time, partySize });
+async function searchRestaurants({ location, cuisine, date, time, partySize }) {
+  return callTool('opentable_search', { location, cuisine, date, time, partySize });
 }
 
 /**
- * Check real-time availability for a specific restaurant.
- * @param {string} restaurantUrl  - Full OpenTable URL
- * @param {string} date           - YYYY-MM-DD
- * @param {string} time           - HH:MM (24h)
+ * Get detailed info about a restaurant.
+ * @param {string} restaurantId - ID or profile URL from search results
+ */
+async function getRestaurantDetails({ restaurantId }) {
+  return callTool('opentable_get_restaurant', { restaurantId });
+}
+
+/**
+ * Check real-time availability.
+ * @param {string} restaurantId
+ * @param {string} date       - YYYY-MM-DD
+ * @param {string} time       - HH:MM
  * @param {number} partySize
  */
-async function checkAvailability({ restaurantUrl, date, time, partySize }) {
-  return callTool('check_availability', { restaurantUrl, date, time, partySize });
+async function checkAvailability({ restaurantId, date, time, partySize }) {
+  return callTool('opentable_check_availability', { restaurantId, date, time, partySize });
 }
 
 /**
- * Get full details for a restaurant (hours, address, price range, etc.)
+ * Make a reservation (set confirm=false to preview, confirm=true to book).
+ * Requires user to be logged in.
  */
-async function getRestaurantDetails({ restaurantUrl }) {
-  return callTool('get_restaurant_details', { restaurantUrl });
+async function makeReservation({ restaurantId, date, time, partySize, specialRequests, confirm }) {
+  return callTool('opentable_make_reservation', { restaurantId, date, time, partySize, specialRequests, confirm });
 }
 
-/**
- * Get menu sections and items.
- */
-async function getRestaurantMenu({ restaurantUrl }) {
-  return callTool('get_restaurant_menu', { restaurantUrl });
+/** Get all upcoming reservations for the logged-in user. */
+async function getReservations() {
+  return callTool('opentable_get_reservations');
 }
 
-/**
- * Get ratings and reviews.
- */
-async function getRestaurantReviews({ restaurantUrl, maxReviews = 5, sortBy = 'newest' }) {
-  return callTool('get_restaurant_reviews', { restaurantUrl, maxReviews, sortBy });
+/** Cancel a reservation. */
+async function cancelReservation({ reservationId }) {
+  return callTool('opentable_cancel_reservation', { reservationId });
 }
 
 /** Gracefully shut down the subprocess. */
@@ -111,4 +125,10 @@ async function shutdown() {
   }
 }
 
-module.exports = { searchRestaurants, checkAvailability, getRestaurantDetails, getRestaurantMenu, getRestaurantReviews, shutdown };
+module.exports = {
+  getStatus, getLoginUrl, logout,
+  searchRestaurants, getRestaurantDetails,
+  checkAvailability, makeReservation,
+  getReservations, cancelReservation,
+  shutdown,
+};
