@@ -49,6 +49,20 @@
     .activity-row { display: flex; align-items: center; gap: 12px; }
     .activity-pill { display: flex; align-items: center; gap: 10px; flex: 1; background: rgba(236,236,240,0.5); border-radius: 10px; padding: 12px 14px; }
     .star-fill { color: #facc15; fill: #facc15; }
+    /* OpenTable panel */
+    .ot-red { color: #da3743; }
+    .ot-bg { background: #da3743; }
+    .ot-btn { background: #da3743; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+    .ot-btn:hover { opacity: 0.85; }
+    .ot-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .ot-btn-outline { background: white; color: #da3743; border: 1.5px solid #da3743; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .ot-btn-outline:hover { background: #da3743; color: white; }
+    .slot-btn { background: #da3743; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin: 3px; transition: opacity 0.2s; }
+    .slot-btn:hover { opacity: 0.85; }
+    .tab-btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+    .tab-btn.active { background: #030213; color: white; }
+    .tab-btn:not(.active) { background: transparent; color: #717182; }
+    .tab-btn:not(.active):hover { background: #ececf0; }
     /* Yelp panel */
     .yelp-red { color: #d32323; }
     .yelp-border { border-color: #d32323; }
@@ -418,17 +432,41 @@ function ItineraryDisplay({ searchData, selectedPackage, preferences, onStartOve
         </div>
       </div>
 
-      {/* Yelp Discovery + Reservations */}
-      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-8">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 yelp-bg rounded-xl flex items-center justify-center text-white font-bold text-lg">y</div>
-          <div>
-            <h3 className="text-base font-semibold text-gray-900">Discover & Reserve via Yelp</h3>
-            <p className="text-xs text-gray-400">Powered by Yelp Fusion AI — search restaurants, ask questions, make reservations</p>
+      {/* Restaurant Discovery Tabs — Yelp + OpenTable */}
+      {(() => {
+        const [activeTab, setActiveTab] = React.useState('opentable');
+        return (
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-8">
+            {/* Tab header */}
+            <div className="flex items-center gap-4 mb-5 flex-wrap">
+              <div className="flex gap-1 bg-gray-50 p-1 rounded-xl border border-gray-100">
+                <button onClick={() => setActiveTab('opentable')} className={`tab-btn ${activeTab === 'opentable' ? 'active' : ''}`}>
+                  🍽 OpenTable
+                </button>
+                <button onClick={() => setActiveTab('yelp')} className={`tab-btn ${activeTab === 'yelp' ? 'active' : ''}`}>
+                  <span className="font-bold" style={{color: activeTab==='yelp'?'white':'#d32323'}}>y</span> Yelp
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">
+                {activeTab === 'opentable'
+                  ? 'Real-time availability & reservations via OpenTable (no API key needed)'
+                  : 'Powered by Yelp Fusion AI — chat, discover, ask questions'}
+              </p>
+            </div>
+
+            {activeTab === 'opentable' && (
+              <OpenTablePanel
+                destination={searchData.destination}
+                travelers={searchData.travelers}
+                startDate={searchData.startDate}
+              />
+            )}
+            {activeTab === 'yelp' && (
+              <YelpPanel destination={searchData.destination} />
+            )}
           </div>
-        </div>
-        <YelpPanel destination={searchData.destination} />
-      </div>
+        );
+      })()}
 
       {/* CTAs */}
       <div className="flex gap-4">
@@ -580,6 +618,167 @@ function ReservationModal({ biz, destination, onClose, chatId, setChatId }) {
           Reservations are processed by Yelp. Availability requires Yelp Reservations to be enabled on your API key.
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ── OpenTable Panel ────────────────────────────────────── */
+function OpenTablePanel({ destination, travelers, startDate }) {
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState(null);       // restaurant for availability check
+  const [availability, setAvailability] = useState(null);
+  const [avLoading, setAvLoading] = useState(false);
+  const [date, setDate] = useState(startDate || '');
+  const [time, setTime] = useState('19:00');
+  const [party, setParty] = useState(travelers || 2);
+  const [error, setError] = useState('');
+
+  const search = async (q) => {
+    const searchQuery = q || query || 'restaurants';
+    setLoading(true); setError(''); setRestaurants([]); setSelected(null); setAvailability(null);
+    try {
+      const res = await fetch(`${PROXY}/api/opentable/search`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery, location: destination, date, time, partySize: party }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Search failed');
+      setRestaurants(json.results || []);
+      if (!json.results?.length) setError('No restaurants found. Try a different search.');
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  const checkAvailability = async (restaurant) => {
+    setSelected(restaurant); setAvailability(null); setAvLoading(true); setError('');
+    try {
+      const res = await fetch(`${PROXY}/api/opentable/availability`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantUrl: restaurant.url, date, time, partySize: party }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Availability check failed');
+      setAvailability(json);
+    } catch (e) { setError(e.message); setAvailability(null); }
+    finally { setAvLoading(false); }
+  };
+
+  // Auto-search on mount
+  React.useEffect(() => { search('restaurants'); }, []);
+
+  return (
+    <div>
+      {/* Search bar */}
+      <form onSubmit={e => { e.preventDefault(); search(); }} className="flex gap-2 mb-4">
+        <input type="text" value={query} onChange={e => setQuery(e.target.value)}
+          placeholder={`Search restaurants in ${destination}…`}
+          className="flex-1 text-sm" />
+        <button type="submit" disabled={loading} className="ot-btn px-4 flex-shrink-0">
+          {loading ? '…' : 'Search'}
+        </button>
+      </form>
+
+      {/* Date / time / party controls */}
+      <div className="flex flex-wrap gap-3 mb-5 text-sm">
+        <div className="flex items-center gap-2">
+          <label className="text-gray-400 text-xs">Date</label>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="text-sm py-1.5 px-2" style={{width:'140px'}} />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-gray-400 text-xs">Time</label>
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} className="text-sm py-1.5 px-2" style={{width:'110px'}} />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-gray-400 text-xs">Party</label>
+          <input type="number" min="1" max="20" value={party} onChange={e => setParty(+e.target.value)} className="text-sm py-1.5 px-2" style={{width:'70px'}} />
+        </div>
+      </div>
+
+      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+
+      {/* Restaurant list */}
+      {restaurants.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {restaurants.map((r, i) => (
+            <div key={i} className="business-card">
+              {r.imageUrl && <img src={r.imageUrl} alt={r.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
+              <p className="font-semibold text-gray-900 text-sm mb-0.5 leading-tight">{r.name}</p>
+              {r.cuisine && <p className="text-xs text-gray-400 mb-1">{r.cuisine}{r.neighborhood ? ` · ${r.neighborhood}` : ''}</p>}
+              <div className="flex items-center gap-2 mb-3">
+                {r.rating > 0 && (
+                  <span className="flex items-center gap-0.5 text-xs text-gray-600">
+                    {[1,2,3,4,5].map(s => (
+                      <svg key={s} width="10" height="10" viewBox="0 0 24 24"
+                        fill={s <= Math.round(r.rating) ? '#facc15' : 'none'}
+                        stroke="#facc15" strokeWidth="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
+                    ))}
+                    {r.rating}
+                  </span>
+                )}
+                {r.reviewCount > 0 && <span className="text-xs text-gray-400">({r.reviewCount.toLocaleString()})</span>}
+                {r.priceRange && <span className="text-xs text-gray-400 ml-auto">{r.priceRange}</span>}
+              </div>
+              <div className="flex gap-2">
+                <a href={r.url} target="_blank" rel="noopener noreferrer" className="ot-btn-outline text-xs flex-1 text-center">View</a>
+                <button onClick={() => checkAvailability(r)} className="ot-btn flex-1 text-xs">
+                  Check Availability
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Availability result */}
+      {(avLoading || availability) && (
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 mb-4">
+          {avLoading ? (
+            <div className="flex items-center gap-3 text-sm text-gray-500">
+              <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
+              Checking live availability on OpenTable…
+            </div>
+          ) : availability && (
+            <>
+              <p className="font-semibold text-gray-900 mb-1">{availability.restaurantName}</p>
+              <p className="text-xs text-gray-400 mb-3">
+                {new Date(availability.date + 'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})} · Party of {availability.partySize}
+              </p>
+
+              {availability.timeSlots?.length > 0 ? (
+                <>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Available times:</p>
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {availability.timeSlots.map((slot, i) => (
+                      <a key={i} href={availability.bookingUrl} target="_blank" rel="noopener noreferrer">
+                        <button className="slot-btn">{slot.time}</button>
+                      </a>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400">Click a time to complete your reservation on OpenTable ↗</p>
+                </>
+              ) : (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3">{availability.message || 'No available times found for this selection.'}</p>
+                  <a href={availability.bookingUrl} target="_blank" rel="noopener noreferrer">
+                    <button className="ot-btn w-full py-2.5">Try Different Times on OpenTable ↗</button>
+                  </a>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {loading && restaurants.length === 0 && (
+        <div className="flex items-center gap-3 text-sm text-gray-400 py-4">
+          <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
+          Searching OpenTable…
+        </div>
+      )}
     </div>
   );
 }

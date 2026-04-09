@@ -13,6 +13,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { buildPackages } = require('./scrapers/index');
+const opentable = require('./opentable-client');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
     yelp_configured: !!YELP_API_KEY,
+    opentable: 'available',
   });
 });
 
@@ -48,6 +50,66 @@ app.post('/api/packages', async (req, res) => {
     res.status(500).json({ error: err.message, fallback: true });
   }
 });
+
+/* ── OpenTable MCP endpoints ────────────────────────────── */
+
+// Search restaurants
+app.post('/api/opentable/search', async (req, res) => {
+  const { query, location, date, time, partySize } = req.body;
+  if (!query || !location) return res.status(400).json({ error: 'query and location are required' });
+  try {
+    const results = await opentable.searchRestaurants({ query, location, date, time, partySize });
+    res.json({ results });
+  } catch (err) {
+    console.error('[opentable/search]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Check real-time availability
+app.post('/api/opentable/availability', async (req, res) => {
+  const { restaurantUrl, date, time, partySize } = req.body;
+  if (!restaurantUrl || !date || !time || !partySize) {
+    return res.status(400).json({ error: 'restaurantUrl, date, time, partySize required' });
+  }
+  try {
+    const result = await opentable.checkAvailability({ restaurantUrl, date, time, partySize });
+    res.json(result);
+  } catch (err) {
+    console.error('[opentable/availability]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Restaurant details
+app.post('/api/opentable/details', async (req, res) => {
+  const { restaurantUrl } = req.body;
+  if (!restaurantUrl) return res.status(400).json({ error: 'restaurantUrl required' });
+  try {
+    const result = await opentable.getRestaurantDetails({ restaurantUrl });
+    res.json(result);
+  } catch (err) {
+    console.error('[opentable/details]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reviews
+app.post('/api/opentable/reviews', async (req, res) => {
+  const { restaurantUrl, maxReviews, sortBy } = req.body;
+  if (!restaurantUrl) return res.status(400).json({ error: 'restaurantUrl required' });
+  try {
+    const result = await opentable.getRestaurantReviews({ restaurantUrl, maxReviews, sortBy });
+    res.json(result);
+  } catch (err) {
+    console.error('[opentable/reviews]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => opentable.shutdown());
+process.on('SIGINT', () => opentable.shutdown().then(() => process.exit(0)));
 
 /* ── Yelp Fusion AI chat proxy ──────────────────────────── */
 app.post('/api/yelp/chat', async (req, res) => {
