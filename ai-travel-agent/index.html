@@ -3,989 +3,604 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TripOptimizer AI – AI Travel Itinerary Builder</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#030213',
-            'primary-fg': '#ffffff',
-            card: '#ffffff',
-            border: 'rgba(0,0,0,0.1)',
-            muted: '#ececf0',
-            'muted-fg': '#717182',
-            accent: '#e9ebef',
-            input: '#f3f3f5',
-          }
-        }
-      }
-    }
-  </script>
+  <title>TripGeo – AI Travel Planning &amp; Price Comparison</title>
+  <meta name="description" content="Plan smarter, travel cheaper. Compare prices across 100+ travel agencies, build AI-powered itineraries, and get the lowest bundle price." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #ffffff; }
-    .step-bar { height: 8px; border-radius: 9999px; transition: background 0.3s; }
-    .card-hover:hover { box-shadow: 0 10px 40px rgba(0,0,0,0.12); transform: translateY(-2px); transition: all 0.2s; }
-    .btn-primary { background: #030213; color: #fff; padding: 14px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s; }
-    .btn-primary:hover { opacity: 0.85; }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-secondary { background: #ececf0; color: #030213; padding: 14px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
-    .btn-secondary:hover { background: #e9ebef; }
-    .option-btn { padding: 14px 16px; border-radius: 10px; border: 2px solid rgba(0,0,0,0.1); background: white; text-align: left; cursor: pointer; font-size: 15px; transition: border-color 0.2s, background 0.2s; }
-    .option-btn:hover { border-color: rgba(3,2,19,0.4); }
-    .option-btn.selected { border-color: #030213; background: rgba(3,2,19,0.06); }
-    input[type=text], input[type=number], input[type=date] {
-      width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.12);
-      background: #f3f3f5; font-size: 15px; outline: none; transition: box-shadow 0.2s;
+    :root {
+      --ink: #1b222d;
+      --ink-2: #2b3545;
+      --muted: #707d8f;
+      --line: #e6e8ec;
+      --bg: #ffffff;
+      --bg-soft: #f6f8fb;
+      --orange: #ff7a3a;
+      --orange-2: #ff5f1f;
+      --teal: #1fb8a6;
+      --teal-2: #1aa0b6;
+      --blue: #2f6bff;
+      --cta-grad: linear-gradient(135deg, #1fc2a8 0%, #1aa0b6 100%);
+      --hero-cta-grad: linear-gradient(135deg, #2f6bff 0%, #1aa0b6 100%);
+      --cta-orange: linear-gradient(135deg, #ff8a3d 0%, #ff5f1f 100%);
+      --shadow-card: 0 2px 8px rgba(23, 37, 66, .06), 0 12px 32px rgba(23, 37, 66, .06);
+      --shadow-soft: 0 1px 2px rgba(23, 37, 66, .05);
     }
-    input:focus { box-shadow: 0 0 0 3px rgba(3,2,19,0.15); }
-    .badge-best { background: #030213; color: white; padding: 4px 12px; border-radius: 9999px; font-size: 13px; font-weight: 500; display: inline-block; margin-bottom: 12px; }
-    .gradient-header { background: linear-gradient(135deg, #030213 0%, #1a1a3e 100%); color: white; border-radius: 18px; padding: 36px; margin-bottom: 32px; }
-    .day-circle { background: #030213; color: white; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
-    .activity-row { display: flex; align-items: center; gap: 12px; }
-    .activity-pill { display: flex; align-items: center; gap: 10px; flex: 1; background: rgba(236,236,240,0.5); border-radius: 10px; padding: 12px 14px; }
-    .star-fill { color: #facc15; fill: #facc15; }
-    /* OpenTable panel */
-    .ot-red { color: #da3743; }
-    .ot-bg { background: #da3743; }
-    .ot-btn { background: #da3743; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
-    .ot-btn:hover { opacity: 0.85; }
-    .ot-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .ot-btn-outline { background: white; color: #da3743; border: 1.5px solid #da3743; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-    .ot-btn-outline:hover { background: #da3743; color: white; }
-    .slot-btn { background: #da3743; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; margin: 3px; transition: opacity 0.2s; }
-    .slot-btn:hover { opacity: 0.85; }
-    .tab-btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
-    .tab-btn.active { background: #030213; color: white; }
-    .tab-btn:not(.active) { background: transparent; color: #717182; }
-    .tab-btn:not(.active):hover { background: #ececf0; }
-    /* Yelp panel */
-    .yelp-red { color: #d32323; }
-    .yelp-border { border-color: #d32323; }
-    .yelp-bg { background: #d32323; }
-    .business-card { background: white; border-radius: 14px; border: 1px solid rgba(0,0,0,0.1); padding: 16px; transition: box-shadow 0.2s; }
-    .business-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
-    .reserve-btn { background: #d32323; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
-    .reserve-btn:hover { opacity: 0.85; }
-    .reserve-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .chat-bubble-ai { background: #f3f3f5; border-radius: 12px 12px 12px 2px; padding: 12px 16px; max-width: 85%; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
-    .chat-bubble-user { background: #030213; color: white; border-radius: 12px 12px 2px 12px; padding: 10px 14px; max-width: 75%; font-size: 14px; align-self: flex-end; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .modal-box { background: white; border-radius: 20px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-    .backend-banner { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 14px 18px; font-size: 14px; color: #92400e; margin-bottom: 20px; }
-    .save-tag { color: #16a34a; font-size: 14px; font-weight: 500; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.55;
+    }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; max-width: 100%; }
+
+    /* layout */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 96px 0; }
+
+    /* header */
+    .nav-wrap {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,.85);
+      backdrop-filter: saturate(180%) blur(10px);
+      border-bottom: 1px solid rgba(23,37,66,.06);
+    }
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 68px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--ink); }
+    .logo-mark {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: var(--cta-grad);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(31,184,166,.35);
+    }
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a { color: var(--muted); font-size: 14px; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta { display: flex; align-items: center; gap: 12px; }
+    .btn { border: 0; cursor: pointer; font-family: inherit; font-weight: 600; border-radius: 10px; transition: transform .15s ease, box-shadow .2s ease, opacity .2s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--ink); padding: 10px 14px; font-size: 14px; }
+    .btn-primary {
+      color: #fff; background: var(--cta-grad);
+      padding: 10px 18px; font-size: 14px;
+      box-shadow: 0 6px 16px rgba(31,184,166,.35);
+    }
+    .btn-primary:hover { box-shadow: 0 10px 24px rgba(31,184,166,.45); }
+    .btn-orange {
+      color: #fff; background: var(--cta-orange);
+      padding: 14px 22px; font-size: 15px;
+      box-shadow: 0 8px 20px rgba(255,95,31,.35);
+    }
+    .btn-outline-white {
+      background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.5);
+      padding: 14px 22px; font-size: 15px; font-weight: 600;
+    }
+    .btn-outline-white:hover { background: rgba(255,255,255,.08); }
+
+    /* hero */
+    .hero {
+      position: relative;
+      min-height: 640px;
+      padding: 120px 0 180px;
+      color: #fff;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0; z-index: -2;
+      background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=80');
+      background-size: cover; background-position: center;
+    }
+    .hero::after {
+      content: ''; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(180deg, rgba(10,20,40,.35) 0%, rgba(10,20,40,.2) 40%, rgba(255,255,255,.9) 100%);
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff; padding: 6px 14px; border-radius: 999px;
+      font-size: 13px; font-weight: 500;
+      backdrop-filter: blur(6px);
+    }
+    .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 4px rgba(255,122,58,.25); }
+    .hero h1 {
+      font-size: clamp(40px, 6vw, 64px);
+      font-weight: 800; line-height: 1.08;
+      margin: 20px 0 18px;
+      letter-spacing: -.02em;
+      text-align: center;
+    }
+    .hero h1 .accent { color: var(--orange); }
+    .hero p.lead {
+      max-width: 620px; margin: 0 auto 36px;
+      text-align: center;
+      font-size: clamp(16px, 1.4vw, 19px);
+      color: rgba(255,255,255,.9);
+    }
+    .hero-inner { text-align: center; display: flex; flex-direction: column; align-items: center; }
+
+    /* search bar */
+    .search-bar {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(10,20,40,.22);
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      width: min(720px, 92vw);
+    }
+    .search-field {
+      display: flex; align-items: center; gap: 10px;
+      background: #f4f6fa; border-radius: 10px; padding: 14px 16px;
+      color: var(--muted); font-size: 15px;
+    }
+    .search-field svg { color: var(--muted); }
+    .search-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: var(--hero-cta-grad); color: #fff; font-weight: 600;
+      padding: 0 22px; border-radius: 10px; font-size: 15px; border: 0; cursor: pointer;
+    }
+    .partners {
+      margin-top: 22px; color: rgba(255,255,255,.85); font-size: 13px;
+      display: flex; flex-wrap: wrap; gap: 22px; justify-content: center;
+    }
+
+    /* section heading */
+    .section-eyebrow {
+      color: var(--orange); font-weight: 700; font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+      text-align: center;
+    }
+    h2.section-title {
+      text-align: center; font-size: clamp(28px, 3.2vw, 38px);
+      font-weight: 800; margin: 10px auto 12px; letter-spacing: -.02em;
+    }
+    h2.section-title .accent { color: var(--orange); }
+    .section-sub { text-align: center; color: var(--muted); max-width: 620px; margin: 0 auto 56px; }
+
+    /* feature grid */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    .feature-card {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 28px; transition: box-shadow .2s, transform .15s;
+    }
+    .feature-card:hover { box-shadow: var(--shadow-card); transform: translateY(-2px); }
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 11px;
+      background: var(--cta-grad);
+      display: flex; align-items: center; justify-content: center; color: #fff;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 14px rgba(31,184,166,.3);
+    }
+    .feature-card h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; }
+    .feature-card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    /* how it works */
+    .how { background: var(--bg-soft); }
+    .steps {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+      position: relative;
+    }
+    .steps::before {
+      content: ''; position: absolute; left: 8%; right: 8%; top: 32px; height: 2px;
+      background: repeating-linear-gradient(90deg, #cbd2dd 0 6px, transparent 6px 14px);
+      z-index: 0;
+    }
+    .step { text-align: center; position: relative; z-index: 1; }
+    .step-icon {
+      width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 16px;
+      background: var(--cta-grad); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 10px 24px rgba(31,184,166,.35);
+    }
+    .step-num { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .16em; }
+    .step h3 { font-size: 18px; margin: 6px 0 8px; font-weight: 700; }
+    .step p { color: var(--muted); font-size: 14px; margin: 0; }
+
+    /* deals */
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      background: rgba(255,95,31,.1); color: var(--orange-2);
+      font-size: 12px; font-weight: 700; letter-spacing: .1em;
+    }
+    .live-badge .dot-live { width: 7px; height: 7px; background: var(--orange); border-radius: 50%; box-shadow: 0 0 0 4px rgba(255,122,58,.25); }
+    .deals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .deal-card {
+      border-radius: 18px; overflow: hidden; background: #fff; border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
+    }
+    .deal-header {
+      background: var(--cta-grad); color: #fff; padding: 22px 22px 26px;
+    }
+    .deal-header .emoji { font-size: 32px; margin-bottom: 6px; }
+    .deal-header h3 { margin: 0; font-size: 18px; font-weight: 700; }
+    .deal-header p { margin: 2px 0 0; color: rgba(255,255,255,.8); font-size: 14px; }
+    .deal-body { padding: 20px 22px 22px; }
+    .price-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; font-size: 14px;
+      border-bottom: 1px dashed var(--line);
+    }
+    .price-row:last-of-type { border-bottom: 0; }
+    .price-row .src { color: var(--muted); }
+    .price-row .val { font-weight: 600; }
+    .price-row.lowest .val { color: #0b9e5e; }
+    .save-tag { color: #0b9e5e; font-weight: 600; font-size: 13px; margin-left: 6px; }
+    .deal-total { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 14px; }
+    .deal-total .big { font-size: 28px; font-weight: 800; color: var(--ink); }
+    .deal-total .was { color: var(--muted); text-decoration: line-through; font-size: 14px; margin-left: 6px; }
+    .deal-btn {
+      width: 100%; background: var(--cta-orange); color: #fff; border: 0;
+      padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(255,95,31,.3);
+    }
+
+    /* cta band */
+    .cta-band {
+      background: linear-gradient(135deg, #2457d6 0%, #17a2b6 100%);
+      color: #fff; text-align: center;
+      border-radius: 0;
+    }
+    .cta-band .section-eyebrow { color: rgba(255,255,255,.85); }
+    .cta-band h2 { color: #fff; font-size: clamp(32px, 4vw, 48px); margin: 10px auto 14px; letter-spacing: -.02em; }
+    .cta-band p { color: rgba(255,255,255,.82); max-width: 560px; margin: 0 auto 32px; font-size: 17px; }
+    .cta-buttons { display: inline-flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .start-pill {
+      display: inline-block; background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.3);
+      padding: 6px 14px; border-radius: 999px;
+      font-size: 13px; font-weight: 600;
+    }
+
+    /* footer */
+    footer { background: #0f1628; color: rgba(249,250,251,.6); padding: 36px 0; }
+    .foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .foot-links { display: flex; gap: 26px; font-size: 14px; }
+    .foot-links a:hover { color: #fff; }
+    .foot small { font-size: 13px; color: rgba(249,250,251,.4); }
+
+    /* responsive */
+    @media (max-width: 920px) {
+      section { padding: 72px 0; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .steps { grid-template-columns: 1fr 1fr; gap: 36px 20px; }
+      .steps::before { display: none; }
+      .deals-grid { grid-template-columns: 1fr; }
+      .search-bar { grid-template-columns: 1fr; }
+      .search-btn { padding: 14px; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 560px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
+      .hero { padding: 88px 0 140px; }
+    }
   </style>
 </head>
 <body>
-<div id="root"></div>
 
-<script type="text/babel">
-const { useState } = React;
+<!-- Nav -->
+<div class="nav-wrap">
+  <div class="container nav">
+    <a class="logo" href="/">
+      <span class="logo-mark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+      </span>
+      TripGeo
+    </a>
+    <nav class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How It Works</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="./app.html" class="btn btn-ghost">Log In</a>
+      <a href="./app.html" class="btn btn-primary">Get Started</a>
+    </div>
+  </div>
+</div>
 
-/* ── SVG Icons ─────────────────────────────────────────── */
-const Icon = {
-  Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>,
-  MapPin: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>,
-  Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>,
-  Users: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-  Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
-  PlaneTakeoff: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 22h20"/><path d="M6.36 17.4 4 17l-2-4 1.1-.55a2 2 0 0 1 1.8 0l.17.1a2 2 0 0 0 1.8 0L8 12 5 6l.9-.45a2 2 0 0 1 2.09.2l4.02 3a2 2 0 0 0 2.1.2l4.19-2.06a2.41 2.41 0 0 1 1.73-.17L21 7a1.4 1.4 0 0 1 .87 1.99l-.38.76c-.23.46-.6.84-1.07 1.08L7.58 17.2a2 2 0 0 1-1.22.18z"/></svg>,
-  ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
-  Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="star-fill"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-  Plane: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2a.5.5 0 0 0-.3.8L4 10l-1 2.5L1 14l4 4 1.5-2 2.5-1 3.5 2.5.8-.2"/></svg>,
-  Hotel: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="m9 22 .01-4"/><path d="m15 22 .01-4"/><path d="M9 7h1"/><path d="M9 11h1"/><path d="M9 15h1"/><path d="M15 7h1"/><path d="M15 11h1"/><path d="M15 15h1"/></svg>,
-  Car: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17H5v-3.5l2-5h10l2 5V17z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>,
-  Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
-  Dollar: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-  Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-  Coffee: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#030213" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></svg>,
-  Camera: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#030213" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
-  Utensils: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#030213" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
-};
+<!-- Hero -->
+<section class="hero">
+  <div class="container hero-inner">
+    <span class="eyebrow"><span class="dot"></span>AI-Powered Travel Planning</span>
+    <h1>Plan Smarter. <span class="accent">Travel Cheaper.</span></h1>
+    <p class="lead">Compare prices across 100+ travel agencies, build your perfect itinerary, and get the lowest bundle price — all powered by AI.</p>
 
-/* ── SearchForm ─────────────────────────────────────────── */
-function SearchForm({ onSearch }) {
-  const [origin, setOrigin] = useState('Los Angeles');
-  const [destination, setDestination] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [travelers, setTravelers] = useState(2);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (destination && startDate && endDate) onSearch({ origin, destination, startDate, endDate, travelers });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 text-gray-900">Find Your Perfect Trip</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
-            <Icon.PlaneTakeoff /> Flying from
-          </label>
-          <input type="text" value={origin} onChange={e => setOrigin(e.target.value)}
-            placeholder="City or airport code" required />
-        </div>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
-            <Icon.MapPin /> Destination
-          </label>
-          <input type="text" value={destination} onChange={e => setDestination(e.target.value)}
-            placeholder="Where do you want to go?" required />
-        </div>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
-            <Icon.Calendar /> Start Date
-          </label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} required />
-        </div>
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
-            <Icon.Calendar /> End Date
-          </label>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} required />
-        </div>
-        <div className="space-y-2 md:col-span-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-500">
-            <Icon.Users /> Travelers
-          </label>
-          <input type="number" value={travelers} onChange={e => setTravelers(Number(e.target.value))} min="1" max="20" required />
-        </div>
+    <form class="search-bar" onsubmit="event.preventDefault(); window.location.href='./app.html';">
+      <div class="search-field">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Where to?</span>
       </div>
-      <button type="submit" className="btn-primary">
-        <Icon.Search /> Search Real Deals
+      <div class="search-field">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+        <span>When?</span>
+      </div>
+      <button class="search-btn" type="submit">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Search
       </button>
     </form>
-  );
-}
 
-/* ── PriceComparison ────────────────────────────────────── */
-function PriceComparison({ packages, packageSource, onSelectPackage }) {
-  const isReal = packageSource === 'real';
-  return (
-    <div className="w-full max-w-6xl">
-      <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          {isReal ? 'Live Deals from Booking.com & Kayak' : 'Compare Prices from Top Providers'}
-        </h2>
-        {isReal && (
-          <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
-            <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
-            Live data · Hotels from Booking.com · Flights from Kayak
-          </div>
-        )}
+    <div class="partners">
+      <span>Booking.com</span><span>Expedia</span><span>Skyscanner</span><span>Airbnb</span><span>Kayak</span>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div class="container">
+    <div class="section-eyebrow">Features</div>
+    <h2 class="section-title">Everything You Need to <span class="accent">Travel Smart</span></h2>
+    <p class="section-sub">From finding the cheapest flights to planning every detail — we've got you covered.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+        <h3>Smart Price Comparison</h3>
+        <p>Compare prices across 100+ travel agencies and websites in seconds.</p>
       </div>
-      <p className="text-gray-500 mb-8">
-        {isReal ? 'Real hotel + flight prices — pick the package that fits your budget' : 'Pick the package that fits your style and budget'}
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {packages.map(pkg => (
-          <div key={pkg.id} className={`card-hover bg-white rounded-2xl border-2 flex flex-col overflow-hidden ${pkg.bestDeal ? 'border-gray-900' : 'border-gray-100'}`}>
-            {/* Hotel image (real data only) */}
-            {pkg.hotelImg && (
-              <div className="relative">
-                <img src={pkg.hotelImg} alt={pkg.hotelName || ''} className="w-full h-40 object-cover" />
-                {pkg.bestDeal && <span className="badge-best absolute top-3 left-3">✦ Best Deal</span>}
-              </div>
-            )}
-            <div className="p-5 flex flex-col flex-1">
-              {!pkg.hotelImg && pkg.bestDeal && <span className="badge-best mb-3">✦ Best Deal</span>}
-
-              {/* Hotel name (real) or provider (mock) */}
-              {pkg.hotelName ? (
-                <div className="mb-3">
-                  <a href={pkg.hotelLink} target="_blank" rel="noopener noreferrer"
-                    className="text-base font-semibold text-gray-900 hover:underline leading-tight line-clamp-2">
-                    {pkg.hotelName}
-                  </a>
-                  {pkg.hotelLocation && <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{pkg.hotelLocation}</p>}
-                </div>
-              ) : (
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{pkg.provider}</h3>
-              )}
-
-              {/* Rating */}
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
-                {pkg.hotelScore ? (
-                  <>
-                    <span className="bg-gray-900 text-white text-xs font-bold px-1.5 py-0.5 rounded">{pkg.hotelScore}</span>
-                    <span className="text-gray-400 text-xs">({(pkg.reviews || 0).toLocaleString()} reviews)</span>
-                  </>
-                ) : (
-                  <><Icon.Star /> {pkg.rating} <span className="text-gray-400 ml-1">({(pkg.reviews || 0).toLocaleString()})</span></>
-                )}
-              </div>
-
-              {/* Price */}
-              <div className="mb-3">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-gray-900">${pkg.totalPrice.toLocaleString()}</span>
-                  <span className="text-gray-400 text-sm">total</span>
-                </div>
-                {pkg.savings > 0 && <p className="save-tag mt-1">You save ~${pkg.savings.toLocaleString()}</p>}
-              </div>
-
-              {/* Price breakdown */}
-              <div className="space-y-2 mb-4 text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span className="flex items-center gap-2"><Icon.Plane />
-                    {pkg.airline ? `${pkg.airline}` : 'Flight'}
-                    {pkg.flightDuration && <span className="text-gray-400 text-xs">· {pkg.flightDuration}</span>}
-                  </span>
-                  <span className="font-medium">${pkg.flightPrice.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="flex items-center gap-2"><Icon.Hotel /> Hotel</span>
-                  <span className="font-medium">${pkg.hotelPrice.toLocaleString()}</span>
-                </div>
-                {pkg.carRentalPrice && (
-                  <div className="flex justify-between">
-                    <span className="flex items-center gap-2"><Icon.Car /> Car Rental</span>
-                    <span className="font-medium">${pkg.carRentalPrice.toLocaleString()}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-1.5 mb-5 flex-1">
-                {pkg.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="mt-0.5 flex-shrink-0"><Icon.Check /></span> {f}
-                  </li>
-                ))}
-              </ul>
-
-              <button onClick={() => onSelectPackage(pkg)}
-                className={`w-full py-3 rounded-xl font-medium transition-all ${pkg.bestDeal ? 'btn-primary' : 'btn-secondary'}`}>
-                Select Package
-              </button>
-            </div>
-          </div>
-        ))}
+      <div class="feature-card">
+        <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></div>
+        <h3>AI Trip Planner</h3>
+        <p>Our AI asks the right questions to craft your perfect personalized itinerary.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16h6"/><path d="M21 12v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/><path d="M18 2a2.828 2.828 0 1 1 4 4L8 20l-4 1 1-4Z"/></svg></div>
+        <h3>Bundle &amp; Save</h3>
+        <p>Get the lowest bundle price by combining flights, hotels, and activities.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg></div>
+        <h3>Price Tracking</h3>
+        <p>Track price trends and get notified when prices drop for your routes.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+        <h3>Global Coverage</h3>
+        <p>Access deals from agencies worldwide, including local hidden gems.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>Best Price Guarantee</h3>
+        <p>We guarantee the lowest total trip cost or we'll match the difference.</p>
       </div>
     </div>
-  );
-}
+  </div>
+</section>
 
-/* ── TripQuestionnaire ──────────────────────────────────── */
-const questions = [
-  { id: 'accommodation', question: 'What type of accommodation do you prefer?', options: ['Luxury Hotel','Boutique Hotel','Budget Hotel','Vacation Rental','Hostel'] },
-  { id: 'activities', question: 'What activities interest you? (Select all that apply)', options: ['Sightseeing','Adventure Sports','Beach & Relaxation','Museums & Culture','Shopping','Nightlife','Food Tours','Nature & Hiking'], multiple: true },
-  { id: 'pace', question: 'What pace do you prefer for your trip?', options: ['Relaxed – lots of downtime','Moderate – balanced schedule','Packed – maximize experiences'] },
-  { id: 'budget', question: "What's your budget per person per day (excluding flights)?", options: ['Under $100','$100–$200','$200–$400','$400+'] },
-  { id: 'dining', question: "What's your dining preference?", options: ['Street Food & Local Eats','Mix of Casual & Fine Dining','Fine Dining & Upscale','Self-Catering'] },
-];
+<!-- How it works -->
+<section id="how" class="how">
+  <div class="container">
+    <div class="section-eyebrow">How It Works</div>
+    <h2 class="section-title">Your Dream Trip in <span class="accent">4 Simple Steps</span></h2>
+    <p class="section-sub">From idea to booking in minutes — we handle the heavy lifting.</p>
 
-function TripQuestionnaire({ onComplete }) {
-  const [current, setCurrent] = useState(0);
-  const [prefs, setPrefs] = useState({ activities: [] });
-  const q = questions[current];
-
-  const handleSelect = (opt) => {
-    if (q.multiple) {
-      const arr = prefs.activities || [];
-      setPrefs({ ...prefs, activities: arr.includes(opt) ? arr.filter(a => a !== opt) : [...arr, opt] });
-    } else {
-      setPrefs({ ...prefs, [q.id]: opt });
-    }
-  };
-
-  const canProceed = q.multiple ? (prefs.activities?.length > 0) : !!prefs[q.id];
-
-  const handleNext = () => {
-    if (current < questions.length - 1) setCurrent(current + 1);
-    else onComplete(prefs);
-  };
-
-  return (
-    <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
-      <div className="mb-6">
-        <div className="flex gap-1.5 mb-3">
-          {questions.map((_, i) => (
-            <div key={i} className="step-bar flex-1" style={{ background: i <= current ? '#030213' : '#ececf0' }} />
-          ))}
-        </div>
-        <p className="text-sm text-gray-400">Question {current + 1} of {questions.length}</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="step-num">STEP 01</div>
+        <h3>Tell Us Where</h3>
+        <p>Enter your destination, travel dates, and number of travelers.</p>
       </div>
-      <h2 className="text-xl font-semibold mb-6 text-gray-900">{q.question}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
-        {q.options.map(opt => {
-          const sel = q.multiple ? prefs.activities?.includes(opt) : prefs[q.id] === opt;
-          return (
-            <button key={opt} onClick={() => handleSelect(opt)}
-              className={`option-btn ${sel ? 'selected' : ''}`}>
-              {sel && <span className="mr-2">✓</span>}{opt}
-            </button>
-          );
-        })}
+      <div class="step">
+        <div class="step-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg></div>
+        <div class="step-num">STEP 02</div>
+        <h3>Answer a Few Questions</h3>
+        <p>Our AI asks about your preferences — budget, style, interests, and must-sees.</p>
       </div>
-      <button onClick={handleNext} disabled={!canProceed} className="btn-primary">
-        {current < questions.length - 1 ? 'Next Question' : '✦ Generate My Itinerary'} <Icon.ChevronRight />
-      </button>
+      <div class="step">
+        <div class="step-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16V9"/><path d="M12 16v-5"/><path d="M17 16v-3"/></svg></div>
+        <div class="step-num">STEP 03</div>
+        <h3>Compare &amp; Optimize</h3>
+        <p>We scan 100+ sources and build the best itinerary at the lowest bundle price.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2a.5.5 0 0 0-.3.8L4 10l-1 2.5L1 14l4 4 1.5-2 2.5-1 3.5 2.5.8-.2"/><path d="m22 22-1.3-1.3"/></svg></div>
+        <div class="step-num">STEP 04</div>
+        <h3>Book &amp; Go</h3>
+        <p>Review your complete trip plan, book everything in one click, and start packing!</p>
+      </div>
     </div>
-  );
-}
+  </div>
+</section>
 
-/* ── ItineraryDisplay ───────────────────────────────────── */
-function ItineraryDisplay({ searchData, selectedPackage, preferences, onStartOver }) {
-  const days = Math.max(1, Math.ceil(
-    (new Date(searchData.endDate) - new Date(searchData.startDate)) / 86400000
-  ));
-  const pricePerPerson = (selectedPackage.totalPrice / searchData.travelers).toFixed(0);
-  const dailyBudget = (selectedPackage.totalPrice / searchData.travelers / days).toFixed(0);
+<!-- Deals -->
+<section id="pricing">
+  <div class="container">
+    <div style="text-align:center"><span class="live-badge"><span class="dot-live"></span>LIVE DEALS</span></div>
+    <h2 class="section-title" style="margin-top:14px">See How Much You Can <span class="accent">Save</span></h2>
+    <p class="section-sub">Real-time price comparisons across top travel platforms — bundled for maximum savings.</p>
 
-  const schedule = [
-    { time: '8:00 AM',  icon: <Icon.Coffee />,   label: 'Breakfast at hotel' },
-    { time: '9:30 AM',  icon: <Icon.Camera />,   label: preferences.activities?.[0] || 'Morning city tour' },
-    { time: '12:30 PM', icon: <Icon.Utensils />, label: 'Lunch at local restaurant' },
-    { time: '2:00 PM',  icon: <Icon.Camera />,   label: preferences.activities?.[1] || 'Afternoon excursion' },
-    { time: '7:00 PM',  icon: <Icon.Utensils />, label: `Dinner – ${preferences.dining || 'restaurant of your choice'}` },
-    { time: '9:00 PM',  icon: <Icon.Camera />,   label: preferences.activities?.[2] || 'Evening stroll' },
-  ];
-
-  const fmt = (dateStr, offset = 0) => {
-    const d = new Date(dateStr);
-    d.setDate(d.getDate() + offset);
-    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  };
-
-  return (
-    <div className="w-full max-w-5xl">
-      {/* Hero */}
-      <div className="gradient-header">
-        <h1 className="text-3xl font-semibold mb-2">Your Personalized Itinerary</h1>
-        <p className="opacity-80 text-lg">{searchData.destination} &nbsp;·&nbsp; {days} days &nbsp;·&nbsp; {searchData.travelers} traveler{searchData.travelers > 1 ? 's' : ''}</p>
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="flex items-center gap-2 text-base font-semibold mb-4"><Icon.Dollar /> Bundle Price</h3>
-          <div className="text-4xl font-bold text-gray-900 mb-1">${selectedPackage.totalPrice.toLocaleString()}</div>
-          <p className="text-gray-500 text-sm">${pricePerPerson} per person</p>
-          <div className="mt-4 pt-4 border-t border-gray-100 space-y-1">
-            <p className="text-sm text-gray-400">Daily budget: ${dailyBudget}</p>
-            {selectedPackage.savings > 0 && <p className="save-tag text-sm">Saved ${selectedPackage.savings} vs booking separately</p>}
+    <div class="deals-grid">
+      <!-- Deal 1: Bali -->
+      <div class="deal-card" data-deal="bali">
+        <div class="deal-header">
+          <div class="emoji">🏝️</div>
+          <h3>Bali, Indonesia</h3>
+          <p data-route>LAX → DPS · 7 nights</p>
+        </div>
+        <div class="deal-body">
+          <div class="price-row"><span class="src">Median fare</span><span class="val" data-median>—</span></div>
+          <div class="price-row"><span class="src">Hotel total</span><span class="val" data-hotel>—</span></div>
+          <div class="price-row lowest"><span class="src">TripGeo Bundle</span><span class="val" data-bundle>—</span></div>
+          <div class="deal-total">
+            <div><span class="big" data-big>—</span><span class="was" data-was></span></div>
           </div>
+          <button class="deal-btn" data-cta>
+            Search this trip
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="flex items-center gap-2 text-base font-semibold mb-4"><Icon.MapPin /> Package Details</h3>
-          <div className="space-y-3 text-sm">
-            <div><p className="text-gray-400">Provider</p><p className="font-medium">{selectedPackage.provider}</p></div>
-            <div><p className="text-gray-400">Accommodation</p><p className="font-medium">{preferences.accommodation}</p></div>
-            <div><p className="text-gray-400">Trip Pace</p><p className="font-medium">{preferences.pace}</p></div>
+      </div>
+      <!-- Deal 2: Santorini -->
+      <div class="deal-card" data-deal="santorini">
+        <div class="deal-header">
+          <div class="emoji">🏛️</div>
+          <h3>Santorini, Greece</h3>
+          <p data-route>LAX → JTR · 5 nights</p>
+        </div>
+        <div class="deal-body">
+          <div class="price-row"><span class="src">Median fare</span><span class="val" data-median>—</span></div>
+          <div class="price-row"><span class="src">Hotel total</span><span class="val" data-hotel>—</span></div>
+          <div class="price-row lowest"><span class="src">TripGeo Bundle</span><span class="val" data-bundle>—</span></div>
+          <div class="deal-total">
+            <div><span class="big" data-big>—</span><span class="was" data-was></span></div>
           </div>
+          <button class="deal-btn" data-cta>
+            Search this trip
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
         </div>
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <h3 className="flex items-center gap-2 text-base font-semibold mb-4"><Icon.Calendar /> Travel Dates</h3>
-          <div className="space-y-3 text-sm">
-            <div><p className="text-gray-400">Check-in</p><p className="font-medium">{fmt(searchData.startDate)}</p></div>
-            <div><p className="text-gray-400">Check-out</p><p className="font-medium">{fmt(searchData.endDate)}</p></div>
-            <div><p className="text-gray-400">Duration</p><p className="font-medium">{days} days, {days - 1} nights</p></div>
+      </div>
+      <!-- Deal 3: Tokyo -->
+      <div class="deal-card" data-deal="tokyo">
+        <div class="deal-header">
+          <div class="emoji">🗼</div>
+          <h3>Tokyo, Japan</h3>
+          <p data-route>LAX → HND · 6 nights</p>
+        </div>
+        <div class="deal-body">
+          <div class="price-row"><span class="src">Median fare</span><span class="val" data-median>—</span></div>
+          <div class="price-row"><span class="src">Hotel total</span><span class="val" data-hotel>—</span></div>
+          <div class="price-row lowest"><span class="src">TripGeo Bundle</span><span class="val" data-bundle>—</span></div>
+          <div class="deal-total">
+            <div><span class="big" data-big>—</span><span class="was" data-was></span></div>
           </div>
+          <button class="deal-btn" data-cta>
+            Search this trip
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
         </div>
-      </div>
-
-      {/* Daily itinerary */}
-      <h2 className="text-2xl font-semibold mb-5 text-gray-900">Daily Itinerary</h2>
-      <div className="space-y-5 mb-8">
-        {Array.from({ length: days }, (_, i) => (
-          <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <div className="flex items-center gap-4 mb-5">
-              <div className="day-circle">{i + 1}</div>
-              <div>
-                <p className="font-semibold text-gray-900">Day {i + 1}</p>
-                <p className="text-sm text-gray-400">{fmt(searchData.startDate, i)}</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {schedule.map((item, idx) => (
-                <div key={idx} className="activity-row">
-                  <div className="flex items-center gap-2 text-gray-400 w-24 text-xs flex-shrink-0">
-                    <Icon.Clock /> {item.time}
-                  </div>
-                  <div className="activity-pill">
-                    {item.icon}
-                    <span className="text-sm text-gray-800">{item.label}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Included features */}
-      <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 mb-8">
-        <h3 className="text-base font-semibold mb-4 text-gray-900">What's Included</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {selectedPackage.features.map((f, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm text-gray-700">
-              <div className="w-2 h-2 bg-gray-900 rounded-full flex-shrink-0" /> {f}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Restaurant Discovery Tabs — Yelp + OpenTable */}
-      {(() => {
-        const [activeTab, setActiveTab] = React.useState('opentable');
-        return (
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-8">
-            {/* Tab header */}
-            <div className="flex items-center gap-4 mb-5 flex-wrap">
-              <div className="flex gap-1 bg-gray-50 p-1 rounded-xl border border-gray-100">
-                <button onClick={() => setActiveTab('opentable')} className={`tab-btn ${activeTab === 'opentable' ? 'active' : ''}`}>
-                  🍽 OpenTable
-                </button>
-                <button onClick={() => setActiveTab('yelp')} className={`tab-btn ${activeTab === 'yelp' ? 'active' : ''}`}>
-                  <span className="font-bold" style={{color: activeTab==='yelp'?'white':'#d32323'}}>y</span> Yelp
-                </button>
-              </div>
-              <p className="text-xs text-gray-400">
-                {activeTab === 'opentable'
-                  ? 'Real-time availability & reservations via OpenTable (no API key needed)'
-                  : 'Powered by Yelp Fusion AI — chat, discover, ask questions'}
-              </p>
-            </div>
-
-            {activeTab === 'opentable' && (
-              <OpenTablePanel
-                destination={searchData.destination}
-                travelers={searchData.travelers}
-                startDate={searchData.startDate}
-              />
-            )}
-            {activeTab === 'yelp' && (
-              <YelpPanel destination={searchData.destination} />
-            )}
-          </div>
-        );
-      })()}
-
-      {/* CTAs */}
-      <div className="flex gap-4">
-        <button onClick={onStartOver} className="btn-secondary flex-1">← New Search</button>
-        <button className="btn-primary flex-1" style={{ flex: 1 }}>Book This Trip ✈</button>
       </div>
     </div>
-  );
-}
+    <p id="deals-status" style="text-align:center;color:var(--muted);font-size:13px;margin-top:18px"></p>
+  </div>
+</section>
 
-/* ── Yelp helpers ───────────────────────────────────────── */
-const PROXY = 'http://localhost:3001';
-
-async function yelpChat(query, chatId, lat, lng) {
-  const body = { query };
-  if (chatId) body.chat_id = chatId;
-  if (lat != null && lng != null) { body.latitude = lat; body.longitude = lng; }
-  const r = await fetch(`${PROXY}/api/yelp/chat`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error((await r.json()).error || r.statusText);
-  return r.json();
-}
-
-function parseBusinesses(data) {
-  for (const entity of (data.entities || [])) {
-    if (entity.businesses?.length) return entity.businesses;
-  }
-  return [];
-}
-
-function StarRating({ rating }) {
-  return (
-    <span className="flex items-center gap-0.5">
-      {[1,2,3,4,5].map(i => (
-        <svg key={i} width="12" height="12" viewBox="0 0 24 24"
-          fill={i <= Math.round(rating) ? '#facc15' : 'none'}
-          stroke="#facc15" strokeWidth="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-      ))}
-      <span className="text-xs text-gray-500 ml-1">{rating} ({(data => data)(0)})</span>
-    </span>
-  );
-}
-
-function BusinessCard({ biz }) {
-  const cats = (biz.categories || []).map(c => c.title).join(', ');
-  const addr = biz.location?.formatted_address?.replace(/\n/g, ', ') || '';
-  const photo = biz.contextual_info?.photos?.[0]?.original_url;
-  const hasReservations = biz.attributes?.RestaurantsReservations || biz.attributes?.OnlineReservations;
-
-  return (
-    <div className="business-card">
-      {photo && <img src={photo} alt={biz.name} className="w-full h-36 object-cover rounded-lg mb-3" />}
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <h4 className="font-semibold text-gray-900 text-base leading-tight">{biz.name}</h4>
-        {biz.price && <span className="text-xs text-gray-400 flex-shrink-0">{biz.price}</span>}
-      </div>
-      {cats && <p className="text-xs text-gray-400 mb-1">{cats}</p>}
-      <div className="flex items-center gap-1 mb-2">
-        {[1,2,3,4,5].map(i => (
-          <svg key={i} width="11" height="11" viewBox="0 0 24 24"
-            fill={i <= Math.round(biz.rating || 0) ? '#facc15' : 'none'}
-            stroke="#facc15" strokeWidth="2">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-        ))}
-        <span className="text-xs text-gray-500 ml-1">{biz.rating} ({(biz.review_count || 0).toLocaleString()} reviews)</span>
-      </div>
-      {addr && <p className="text-xs text-gray-400 mb-3 leading-relaxed">{addr}</p>}
-      {biz.contextual_info?.review_snippet && (
-        <p className="text-xs text-gray-600 italic mb-3 line-clamp-2">
-          "{biz.contextual_info.review_snippet.replace(/\[\[HIGHLIGHT\]\]|\[\[ENDHIGHLIGHT\]\]/g, '')}"
-        </p>
-      )}
-      {biz.url && (
-        <div className="flex gap-2 items-center">
-          <a href={biz.url} target="_blank" rel="noopener noreferrer" className="reserve-btn ml-auto" style={{textDecoration:'none'}}>
-            {hasReservations ? 'Reserve on Yelp' : 'View on Yelp'}
-          </a>
-        </div>
-      )}
+<!-- CTA band -->
+<section class="cta-band">
+  <div class="container">
+    <span class="start-pill">Start planning for free</span>
+    <h2>Ready to Save on Your Next Adventure?</h2>
+    <p>Join thousands of smart travelers who save an average of $340 per trip with TripGeo.</p>
+    <div class="cta-buttons">
+      <a href="./app.html" class="btn btn-orange">
+        Plan My Trip
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" style="display:inline;vertical-align:-2px;margin-left:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+      <a href="#how" class="btn btn-outline-white">See How It Works</a>
     </div>
-  );
-}
+  </div>
+</section>
 
-
-/* ── OpenTable Panel ────────────────────────────────────── */
-function OpenTablePanel({ destination, travelers, startDate }) {
-  const [authStatus, setAuthStatus] = useState(null); // null=checking, {loggedIn}
-  const [restaurants, setRestaurants] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [cuisine, setCuisine] = useState('');
-  const [date, setDate] = useState(startDate || '');
-  const [time, setTime] = useState('19:00');
-  const [party, setParty] = useState(travelers || 2);
-  const [error, setError] = useState('');
-  // Availability
-  const [avRestaurant, setAvRestaurant] = useState(null);
-  const [availability, setAvailability] = useState(null);
-  const [avLoading, setAvLoading] = useState(false);
-  const api = async (method, path, body) => {
-    const r = await fetch(`${PROXY}/api/opentable${path}`, {
-      method, headers: { 'Content-Type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const json = await r.json();
-    if (!r.ok) throw new Error(json.error || r.statusText);
-    return json;
-  };
-
-  // Check auth on mount
-  React.useEffect(() => {
-    api('GET', '/status')
-      .then(d => setAuthStatus(d))
-      .catch(() => setAuthStatus({ loggedIn: false, error: 'Could not reach server' }));
-  }, []);
-
-  // Auto-search once auth confirmed
-  React.useEffect(() => {
-    if (authStatus) search();
-  }, [authStatus]);
-
-  const search = async () => {
-    setLoading(true); setError(''); setRestaurants([]); setAvRestaurant(null); setAvailability(null);
-    try {
-      const d = await api('POST', '/search', { location: destination, cuisine: cuisine || undefined, date: date || undefined, time, partySize: party });
-      setRestaurants(d.results || []);
-      if (!d.results?.length) setError('No restaurants found — try a different cuisine or dates.');
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
-  };
-
-  const checkAvailability = async (r) => {
-    setAvRestaurant(r); setAvailability(null); setAvLoading(true); setError('');
-    try {
-      const d = await api('POST', '/availability', { restaurantId: r.id || r.url, date, time, partySize: party });
-      setAvailability(d);
-    } catch (e) { setError(e.message); }
-    finally { setAvLoading(false); }
-  };
-
-  const RatingStars = ({ rating }) => rating > 0 ? (
-    <span className="flex items-center gap-0.5">
-      {[1,2,3,4,5].map(s => (
-        <svg key={s} width="10" height="10" viewBox="0 0 24 24"
-          fill={s <= Math.round(rating) ? '#facc15' : 'none'} stroke="#facc15" strokeWidth="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-        </svg>
-      ))}
-      <span className="text-xs text-gray-500 ml-0.5">{rating}</span>
-    </span>
-  ) : null;
-
-  // ── Auth gate ──────────────────────────────────────────
-  if (!authStatus) return (
-    <div className="flex items-center gap-3 text-sm text-gray-400 py-4">
-      <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
-      Connecting to OpenTable…
+<!-- Footer -->
+<footer>
+  <div class="container foot">
+    <a class="logo" href="/" style="color:#fff">
+      <span class="logo-mark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+      </span>
+      TripGeo
+    </a>
+    <div class="foot-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Support</a>
     </div>
-  );
+    <small>© 2026 TripGeo. All rights reserved.</small>
+  </div>
+</footer>
 
-  if (!authStatus.loggedIn) return (
-    <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
-      <p className="font-semibold text-gray-900 mb-1">Sign in to OpenTable</p>
-      <p className="text-sm text-gray-500 mb-4">Log in once to enable real-time availability. Your session is stored securely on your local machine.</p>
-      <div className="space-y-3">
-          <a href="https://www.opentable.com/login" target="_blank" rel="noopener noreferrer" style={{textDecoration:'none'}}>
-            <button className="ot-btn w-full py-2.5">Open OpenTable Login ↗</button>
-          </a>
-          <p className="text-xs text-gray-400">After logging in, click below to refresh.</p>
-          <button onClick={() => api('GET','/status').then(setAuthStatus).catch(()=>{})}
-            className="ot-btn-outline w-full py-2 text-sm">I've logged in — refresh status</button>
-        </div>
-    </div>
-  );
+<script>
+(function () {
+  // After deploying the FastAPI backend on Railway, paste the public URL here:
+  // e.g. 'https://tripgeo-api.up.railway.app'
+  const PROD_API = '';
+  const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : PROD_API;
 
-  return (
-    <div>
-      {/* Search controls */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <input type="text" value={cuisine} onChange={e => setCuisine(e.target.value)}
-          placeholder="Cuisine (optional)" className="text-sm" style={{width:'160px'}} />
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} className="text-sm py-2 px-2" style={{width:'145px'}} />
-        <input type="time" value={time} onChange={e => setTime(e.target.value)} className="text-sm py-2 px-2" style={{width:'110px'}} />
-        <input type="number" min="1" max="20" value={party} onChange={e => setParty(+e.target.value)}
-          className="text-sm py-2 px-2" style={{width:'70px'}} placeholder="Party" />
-        <button onClick={search} disabled={loading} className="ot-btn px-5">
-          {loading ? '…' : 'Search'}
-        </button>
-      </div>
+  const fmt = n => n == null ? '—' : '$' + Math.round(n).toLocaleString('en-US');
+  const status = document.getElementById('deals-status');
 
-      {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-
-      {/* Restaurant cards */}
-      {restaurants.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {restaurants.map((r, i) => (
-            <div key={i} className="business-card">
-              {r.imageUrl && <img src={r.imageUrl} alt={r.name} className="w-full h-32 object-cover rounded-lg mb-3" />}
-              <p className="font-semibold text-gray-900 text-sm mb-0.5 leading-tight">{r.name}</p>
-              {(r.cuisine || r.neighborhood) && <p className="text-xs text-gray-400 mb-1">{[r.cuisine,r.neighborhood].filter(Boolean).join(' · ')}</p>}
-              <div className="flex items-center gap-2 mb-3">
-                <RatingStars rating={r.rating} />
-                {r.reviewCount > 0 && <span className="text-xs text-gray-400">({r.reviewCount.toLocaleString()})</span>}
-                {r.priceRange && <span className="text-xs text-gray-400 ml-auto">{r.priceRange}</span>}
-              </div>
-              <div className="flex gap-2">
-                {r.url && <a href={r.url} target="_blank" rel="noopener noreferrer" className="ot-btn-outline text-xs">View</a>}
-                <button onClick={() => checkAvailability(r)} className="ot-btn flex-1 text-xs">
-                  Check Times
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {loading && !restaurants.length && (
-        <div className="flex items-center gap-3 text-sm text-gray-400 py-4">
-          <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
-          Searching OpenTable for {destination}…
-        </div>
-      )}
-
-      {/* Availability panel */}
-      {(avLoading || availability) && (
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 mb-4">
-          {avLoading ? (
-            <div className="flex items-center gap-3 text-sm text-gray-500">
-              <div className="w-4 h-4 rounded-full border-2 border-gray-200 border-t-red-400 animate-spin" />
-              Checking live availability…
-            </div>
-          ) : availability && (() => {
-            const slots = availability.availableSlots || availability.timeSlots || [];
-            return (
-              <>
-                <p className="font-semibold text-gray-900 mb-0.5">{avRestaurant?.name}</p>
-                <p className="text-xs text-gray-400 mb-3">
-                  {date ? new Date(date+'T12:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) : ''} · Party of {party}
-                </p>
-                {slots.length > 0 ? (
-                  <>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Available times — click to book on OpenTable:</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {slots.map((slot, i) => {
-                        const slotTime = slot.time || slot;
-                        const bookUrl = avRestaurant?.url
-                          ? `${avRestaurant.url}?covers=${party}${date ? `&dateTime=${date}T${slotTime.replace(/\s/g,'')}` : ''}`
-                          : avRestaurant?.url || 'https://www.opentable.com';
-                        return (
-                          <a key={i} href={bookUrl} target="_blank" rel="noopener noreferrer" className="slot-btn" style={{textDecoration:'none'}}>
-                            {slotTime}
-                          </a>
-                        );
-                      })}
-                    </div>
-                    <p className="text-xs text-gray-400">Opens OpenTable to complete your reservation.</p>
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-600">{availability.message || 'No available times found. Try different dates or times.'}</p>
-                )}
-              </>
-            );
-          })()}
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-function YelpPanel({ destination }) {
-  const [backendOk, setBackendOk] = useState(null); // null=checking, true/false
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [chatId, setChatId] = useState(null);
-  const [businesses, setBusinesses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = React.useRef(null);
-
-  // Check backend health on mount
-  React.useEffect(() => {
-    fetch(`${PROXY}/api/health`)
-      .then(r => r.json())
-      .then(d => setBackendOk(d.ok))
-      .catch(() => setBackendOk(false));
-  }, []);
-
-  React.useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Auto-search on first load once backend confirmed
-  React.useEffect(() => {
-    if (backendOk && messages.length === 0 && destination) {
-      sendQuery(`Find the best restaurants in ${destination}`);
-    }
-  }, [backendOk]);
-
-  const sendQuery = async (q) => {
-    const query = q || input.trim();
-    if (!query) return;
-    setInput('');
-    setMessages(m => [...m, { role: 'user', text: query }]);
-    setLoading(true);
-    try {
-      const data = await yelpChat(query, chatId);
-      const text = data.response?.text || '';
-      const bizList = parseBusinesses(data);
-      setChatId(data.chat_id);
-      setMessages(m => [...m, { role: 'ai', text }]);
-      if (bizList.length) setBusinesses(bizList);
-    } catch (e) {
-      setMessages(m => [...m, { role: 'ai', text: `⚠ ${e.message}` }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (backendOk === null) {
-    return <div className="text-sm text-gray-400 py-4 text-center">Connecting to Yelp backend…</div>;
+  if (!API_BASE) {
+    if (status) status.textContent = 'Live deals will appear once the Railway backend URL is configured.';
+    return;
   }
 
-  if (!backendOk) {
-    return (
-      <div className="backend-banner">
-        <p className="font-semibold mb-1">🔌 Yelp backend not running</p>
-        <p className="mb-2">Start the local proxy to enable restaurant discovery and reservations:</p>
-        <code className="block bg-orange-50 border border-orange-200 rounded px-3 py-2 text-xs font-mono">
-          cd ai-travel-agent &amp;&amp; cp .env.example .env &amp;&amp; npm install &amp;&amp; npm start
-        </code>
-        <p className="mt-2 text-xs">Then add your <strong>YELP_API_KEY</strong> to <code>.env</code> and refresh.</p>
-      </div>
-    );
-  }
+  if (status) status.textContent = 'Loading live prices…';
 
-  return (
-    <div>
-      {/* Business grid */}
-      {businesses.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {businesses.map((biz, i) => (
-            <BusinessCard key={biz.id || i} biz={biz} />
-          ))}
-        </div>
-      )}
+  fetch(API_BASE + '/api/deals')
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(data => {
+      (data.deals || []).forEach(deal => {
+        const card = document.querySelector('.deal-card[data-deal="' + deal.key + '"]');
+        if (!card) return;
 
-      {/* Chat thread */}
-      {messages.length > 0 && (
-        <div className="flex flex-col gap-3 mb-4 max-h-64 overflow-y-auto pr-1">
-          {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'}>
-                {m.text}
-              </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="flex justify-start">
-              <div className="chat-bubble-ai text-gray-400">Yelp is thinking…</div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      )}
+        const f = deal.flight || {};
+        const h = deal.hotel || {};
+        const lowest = (typeof f.lowest === 'number') ? f.lowest : null;
+        const median = (typeof f.median === 'number') ? f.median : null;
+        const highest = (typeof f.highest === 'number') ? f.highest : null;
+        const hotelTotal = (typeof h.totalPrice === 'number') ? h.totalPrice : null;
+        const bundle = (typeof deal.bundlePrice === 'number') ? deal.bundlePrice : lowest;
 
-      {/* Input */}
-      <form onSubmit={e => { e.preventDefault(); sendQuery(); }} className="flex gap-2">
-        <input type="text" value={input} onChange={e => setInput(e.target.value)}
-          placeholder={`Ask Yelp anything — "best sushi near ${destination}", "romantic dinner spot", "book a table for 2"…`}
-          className="flex-1 text-sm" disabled={loading} />
-        <button type="submit" disabled={loading || !input.trim()} className="reserve-btn px-5 flex-shrink-0">
-          {loading ? '…' : 'Ask'}
-        </button>
-      </form>
+        const route = card.querySelector('[data-route]');
+        if (route) route.textContent = `${deal.origin} → ${deal.destination} · ${deal.nights} nights · live`;
 
-    </div>
-  );
-}
+        card.querySelector('[data-median]').textContent = fmt(median);
+        card.querySelector('[data-hotel]').textContent = fmt(hotelTotal);
 
-/* ── App ────────────────────────────────────────────────── */
-function App() {
-  const [step, setStep] = useState('search');
-  const [searchData, setSearchData] = useState(null);
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [preferences, setPreferences] = useState(null);
-  const [packages, setPackages] = useState([]);
-  const [loadingPackages, setLoadingPackages] = useState(false);
-  const [packageSource, setPackageSource] = useState('mock'); // 'real' | 'mock'
+        const bundleEl = card.querySelector('[data-bundle]');
+        if (bundle && highest && highest > bundle) {
+          const save = Math.round((highest - bundle) / highest * 100);
+          bundleEl.innerHTML = fmt(bundle) + ' <span class="save-tag">Save ' + save + '%</span>';
+        } else {
+          bundleEl.textContent = fmt(bundle);
+        }
 
-  const mockPackages = (data) => {
-    const fp = 450, nights = Math.max(1,Math.ceil((new Date(data.endDate)-new Date(data.startDate))/86400000)), hp = 120*nights, t = data.travelers;
-    return [
-      { id:'1', provider:'TravelBuddy', totalPrice:(fp+hp+200)*t, flightPrice:fp*t, hotelPrice:hp*t, carRentalPrice:200*t, rating:4.8, reviews:1243, features:['Free cancellation up to 48h','24/7 customer support','Airport transfers included','Complimentary breakfast'], savings:250, bestDeal:true },
-      { id:'2', provider:'SkyExplorer', totalPrice:(fp*1.15+hp*0.9+180)*t, flightPrice:fp*1.15*t, hotelPrice:hp*0.9*t, carRentalPrice:180*t, rating:4.6, reviews:892, features:['Flexible date changes','Travel insurance included','Priority check-in','Free WiFi'], savings:150 },
-      { id:'3', provider:'GlobalGetaways', totalPrice:(fp*1.2+hp*1.1)*t, flightPrice:fp*1.2*t, hotelPrice:hp*1.1*t, rating:4.5, reviews:2156, features:['Luxury hotel upgrades','Concierge service','Welcome gift','Late checkout'] },
-      { id:'4', provider:'WanderWise', totalPrice:(fp*0.95+hp*1.05+150)*t, flightPrice:fp*0.95*t, hotelPrice:hp*1.05*t, carRentalPrice:150*t, rating:4.7, reviews:1567, features:['Price match guarantee','Rewards points 2×','Travel guide included','$50 room service credit'], savings:180 },
-      { id:'5', provider:'VoyageVista', totalPrice:(fp*1.1+hp*0.85+220)*t, flightPrice:fp*1.1*t, hotelPrice:hp*0.85*t, carRentalPrice:220*t, rating:4.4, reviews:734, features:['Eco-friendly hotels','Carbon offset included','Local experience tours','Mobile app support'], savings:120 },
-      { id:'6', provider:'JetSetters', totalPrice:(fp*1.25+hp*1.15)*t, flightPrice:fp*1.25*t, hotelPrice:hp*1.15*t, rating:4.9, reviews:3421, features:['Premium economy flights','5-star hotels only','Private transfers','Spa access included'] },
-    ];
-  };
+        card.querySelector('[data-big]').textContent = fmt(bundle);
+        const was = card.querySelector('[data-was]');
+        if (was) was.textContent = highest && bundle && highest > bundle ? fmt(highest) : '';
 
-  const fetchPackages = async (data) => {
-    setLoadingPackages(true);
-    try {
-      const res = await fetch(`${PROXY}/api/packages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        const cta = card.querySelector('[data-cta]');
+        if (cta) {
+          const link = f.affiliateLink;
+          if (link) {
+            cta.onclick = () => window.open(link, '_blank', 'noopener');
+          } else {
+            cta.onclick = () => { window.location.href = './app.html'; };
+          }
+        }
       });
-      const json = await res.json();
-      if (!json.fallback && json.packages?.length) {
-        setPackages(json.packages);
-        setPackageSource('real');
-      } else {
-        setPackages(mockPackages(data));
-        setPackageSource('mock');
+      if (status) {
+        const t = new Date(data.updatedAt || Date.now());
+        status.textContent = 'Live data · updated ' + t.toLocaleString();
       }
-    } catch {
-      setPackages(mockPackages(data));
-      setPackageSource('mock');
-    } finally {
-      setLoadingPackages(false);
-    }
-  };
-
-  const reset = () => { setStep('search'); setSearchData(null); setSelectedPackage(null); setPreferences(null); setPackages([]); setPackageSource('mock'); };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center">
-              <Icon.Sparkles />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 leading-tight">TripOptimizer AI</p>
-              <p className="text-xs text-gray-400">Smart Travel Planning</p>
-            </div>
-          </div>
-          {step !== 'search' && (
-            <button onClick={reset} className="text-sm text-gray-400 hover:text-gray-800 transition-colors">
-              ← New Search
-            </button>
-          )}
-        </div>
-        {/* Progress indicator */}
-        <div className="max-w-6xl mx-auto px-6 pb-3 flex items-center gap-2 text-xs text-gray-400">
-          {['search','compare','questionnaire','itinerary'].map((s, i) => (
-            <React.Fragment key={s}>
-              <span className={step === s ? 'text-gray-900 font-medium' : ''}>
-                {['Search','Compare','Preferences','Itinerary'][i]}
-              </span>
-              {i < 3 && <span className="text-gray-200">›</span>}
-            </React.Fragment>
-          ))}
-        </div>
-      </header>
-
-      {/* Main */}
-      <main className="max-w-6xl mx-auto px-6 py-12 flex flex-col items-center">
-        {step === 'search' && (
-          <div className="w-full flex flex-col items-center">
-            <div className="text-center mb-10">
-              <h1 className="text-5xl font-semibold text-gray-900 mb-4 tracking-tight">Plan Your Perfect Trip</h1>
-              <p className="text-lg text-gray-500 max-w-xl">
-                Compare prices from Booking.com &amp; Kayak, personalise your preferences, and get a day-by-day itinerary instantly.
-              </p>
-            </div>
-            <SearchForm onSearch={d => { setSearchData(d); setStep('compare'); fetchPackages(d); }} />
-          </div>
-        )}
-
-        {step === 'compare' && searchData && (
-          loadingPackages ? (
-            <div className="flex flex-col items-center gap-4 py-20">
-              <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-gray-900 animate-spin" />
-              <p className="text-gray-500">Searching Booking.com &amp; Kayak for real deals…</p>
-              <p className="text-xs text-gray-300">This takes ~15–20 seconds</p>
-            </div>
-          ) : (
-            <PriceComparison
-              packages={packages}
-              packageSource={packageSource}
-              onSelectPackage={p => { setSelectedPackage(p); setStep('questionnaire'); }}
-            />
-          )
-        )}
-
-        {step === 'questionnaire' && (
-          <div className="w-full flex flex-col items-center">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-semibold text-gray-900 mb-3">Personalise Your Trip</h1>
-              <p className="text-gray-500">A few quick questions so we can tailor the perfect itinerary for you</p>
-            </div>
-            <TripQuestionnaire onComplete={p => { setPreferences(p); setStep('itinerary'); }} />
-          </div>
-        )}
-
-        {step === 'itinerary' && searchData && selectedPackage && preferences && (
-          <ItineraryDisplay searchData={searchData} selectedPackage={selectedPackage} preferences={preferences} onStartOver={reset} />
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-100 mt-20 py-8">
-        <div className="max-w-6xl mx-auto px-6 text-center text-sm text-gray-400">
-          © 2026 TripOptimizer AI · AI Travel Itinerary Builder MVP
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    })
+    .catch(err => {
+      console.warn('Live deals unavailable:', err);
+      if (status) status.textContent = 'Live data temporarily unavailable.';
+    });
+})();
 </script>
+
 </body>
 </html>
